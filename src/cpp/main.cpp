@@ -4,8 +4,8 @@
  * 15.04.2025
  */
 
-#include "error.h"
-#include "arg_parser.h"
+#include "../header/error.h"
+#include "../header/arg_parser.h"
 #include <string>
 
 using namespace std;

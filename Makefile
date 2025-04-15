@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -g -std=c++20 -Wall -pedantic
 
-SRC_DIR = src
+SRC_DIR = src/cpp
 OBJ_DIR = build
 
 TARGET = ipk25chat-client

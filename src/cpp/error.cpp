@@ -6,7 +6,7 @@
  * Custom error definitions
  */
 #include <string>
-#include "error.h"
+#include "../header/error.h"
 #include <iostream>
 
 using namespace std;

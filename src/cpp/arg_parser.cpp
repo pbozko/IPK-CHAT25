@@ -10,8 +10,8 @@
 #include <iostream>
 #include <algorithm>
 #include <cctype>
-#include "arg_parser.h"
-#include "error.h"
+#include "../header/arg_parser.h"
+#include "../header/error.h"
 
 using namespace std;
 
