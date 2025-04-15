@@ -1,18 +1,21 @@
 CXX = g++
 CXXFLAGS = -g -std=c++20 -Wall -pedantic
 
+SRC_DIR = src
+OBJ_DIR = build
+
 TARGET = ipk25chat-client
 
-SRCS = arg_parser.cpp error.cpp main.cpp
-OBJS = arg_parser.o error.o main.o
+SRCS = $(wildcard $(SRC_DIR)/*.cpp)
+OBJS = $(patsubst $(SRC_DIR)/%.cpp, $(OBJ_DIR)/%.o, $(SRCS))
 
 all: $(TARGET)
-	rm -f $(OBJS)
+#	rm -f $(OBJS) 
 
 $(TARGET): $(OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
-%.o: %.cpp
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
