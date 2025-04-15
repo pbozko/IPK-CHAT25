@@ -32,3 +32,6 @@
 *.out
 *.app
 
+ipk25chat-client
+LICENSE
+*.json
