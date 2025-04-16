@@ -40,6 +40,9 @@ error::error(CError error_code){
         case(L4_PROT):
             this->error_message = "Specified L4 protocol is invalid. Options are either 'tcp' or 'udp'.";
             break;
+        case(MISSING_ATT):
+            this->error_message = "Missing required message attribute.";
+            break;
     }
 
     cerr << this->error_message << endl;

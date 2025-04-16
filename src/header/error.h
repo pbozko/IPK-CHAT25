@@ -20,6 +20,8 @@ typedef enum CError {
     RETR_VAL = 7,
     UINT16 = 8,
     L4_PROT = 9,
+    MISSING_ATT = 10,
+    INVALID_ATT = 11,
 } CError;
 
 class error {
