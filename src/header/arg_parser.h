@@ -14,7 +14,7 @@ using namespace std;
 class arg_parser {
     public:
         arg_parser(int argc, char** argv);
-        bool get_protocol();
+        string get_protocol();
         string get_server();
         uint16_t get_port();
         uint16_t get_udp_timeout();

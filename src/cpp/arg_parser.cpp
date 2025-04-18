@@ -94,6 +94,30 @@ void arg_parser::parse_input(){
     }
 }
 
+string arg_parser::get_protocol(){
+    return this->protocol;
+}
+
+string arg_parser::get_server(){
+    return this->server;
+}
+
+uint16_t arg_parser::get_port(){
+    return this->port;
+}
+
+uint16_t arg_parser::get_udp_timeout(){
+    return this->udp_timeout;
+}
+
+uint16_t arg_parser::get_udp_retransmission(){
+    return this->udp_retransmission;
+}
+
+bool arg_parser::get_output_help_flag(){
+    return this->output_help_flag;
+}
+
 
 /**
  * DEBUG FUNCTION
