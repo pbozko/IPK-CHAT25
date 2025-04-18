@@ -14,13 +14,13 @@
 
 using namespace std;
 
-MessageTCP::MessageTCP(const string& type, const string& payload,
-                    const optional<string>& display_name,
-                    const optional<string>& content,
-                    const optional<string>& username,
-                    const optional<string>& secret,
-                    const optional<string>& channel,
-                    const optional<string>& is_ok)
+MessageTCP::MessageTCP(const string &type, const string &payload,
+                    const optional<string> &display_name,
+                    const optional<string> &content,
+                    const optional<string> &username,
+                    const optional<string> &secret,
+                    const optional<string> &channel,
+                    const optional<string> &is_ok)
                 : type(type), payload(payload), display_name(display_name), content(content),
                 username(username), secret(secret), channel(channel), is_ok(is_ok) {}
 
@@ -110,36 +110,36 @@ void MessageTCP::dump(){
         cout << "is_ok: " << is_ok.value() << endl;
 }
 
-MessageTCP::Builder::Builder(const string& type, const string& payload)
+MessageTCP::Builder::Builder(const string &type, const string &payload)
     : type(type), payload(payload) {} /* , display_name(nullopt), content(nullopt),
     username(nullopt), secret(nullopt), channel(nullopt), is_ok(nullopt) */
 
-MessageTCP::Builder& MessageTCP::Builder::set_display_name(const string& value){
+MessageTCP::Builder& MessageTCP::Builder::set_display_name(const string &value){
     display_name = value;
     return *this;
 }
 
-MessageTCP::Builder& MessageTCP::Builder::set_content(const string& value){
+MessageTCP::Builder& MessageTCP::Builder::set_content(const string &value){
     content = value;
     return *this;
 }
 
-MessageTCP::Builder& MessageTCP::Builder::set_username(const string& value){
+MessageTCP::Builder& MessageTCP::Builder::set_username(const string &value){
     username = value;
     return *this;
 }
 
-MessageTCP::Builder& MessageTCP::Builder::set_secret(const string& value){
+MessageTCP::Builder& MessageTCP::Builder::set_secret(const string &value){
     secret = value;
     return *this;
 }
 
-MessageTCP::Builder& MessageTCP::Builder::set_channel(const string& value){
+MessageTCP::Builder& MessageTCP::Builder::set_channel(const string &value){
     channel = value;
     return *this;
 }
 
-MessageTCP::Builder& MessageTCP::Builder::set_is_ok(const string& value){
+MessageTCP::Builder& MessageTCP::Builder::set_is_ok(const string &value){
     is_ok = value;
     return *this;
 }

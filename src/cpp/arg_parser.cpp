@@ -1,7 +1,8 @@
 /**
  * Martin Bozko
  * xbozko01
- * 15.04.2025
+ * 18.11.2024 for ISA project
+ * 15.04.2025 updated for IPK project
  * 
  * Argument parser class implementation
  */
@@ -35,7 +36,7 @@ arg_parser::arg_parser(int argc, char** argv){
 
     transform(this->protocol.begin(), this->protocol.end(), this->protocol.begin(), ::tolower);
     if(this->protocol != "tcp" && this->protocol != "udp"){
-        throw error(L4_PROT);
+        throw error(PROTOCOL);
     }
 }
 
@@ -62,26 +63,26 @@ void arg_parser::parse_input(){
             case 'p':
                 try{
                     this->port = static_cast<uint16_t>(stoi(optarg));
-                } catch(const std::invalid_argument& e){
+                } catch(const invalid_argument& e){
                     throw error(PORT_VAL);
-                } catch(const std::out_of_range& e){
-                    throw error(UINT16);
+                } catch(const out_of_range& e){
+                    throw error(CONVERSION);
                 } break;
             case 'd':
                 try{
                     this->udp_timeout = static_cast<uint16_t>(stoi(optarg));
-                } catch(const std::invalid_argument& e){
+                } catch(const invalid_argument& e){
                     throw error(TIMEOUT_VAL);
-                } catch(const std::out_of_range& e){
-                    throw error(UINT16);
+                } catch(const out_of_range& e){
+                    throw error(CONVERSION);
                 } break;
             case 'r':
                 try{
                     this->udp_retransmission = static_cast<uint16_t>(stoi(optarg));
-                } catch(const std::invalid_argument& e){
-                    throw error(TIMEOUT_VAL);
-                } catch(const std::out_of_range& e){
-                    throw error(UINT16);
+                } catch(const invalid_argument& e){
+                    throw error(RETR_VAL);
+                } catch(const out_of_range& e){
+                    throw error(CONVERSION);
                 } break;
             case 'h':
                 this->output_help_flag = true;

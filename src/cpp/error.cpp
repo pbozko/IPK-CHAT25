@@ -1,7 +1,8 @@
 /**
  * Martin Bozko
  * xbozko01
- * 15.04.2025
+ * 18.11.2024 for ISA project
+ * 15.04.2025 modified for IPK project
  * 
  * Custom error definitions
  */
@@ -34,10 +35,10 @@ error::error(CError error_code){
         case(RETR_VAL):
             this->error_message = "Specified maximum UDP retransmission count needs to be a number.";
             break;
-        case(UINT16):
-            this->error_message = "Value cannot be converted to uint16_t.";
+        case(CONVERSION):
+            this->error_message = "Error occured during type conversion.";
             break;
-        case(L4_PROT):
+        case(PROTOCOL):
             this->error_message = "Specified L4 protocol is invalid. Options are either 'tcp' or 'udp'.";
             break;
         case(MISSING_ATT):
