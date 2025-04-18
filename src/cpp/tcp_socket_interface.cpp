@@ -84,10 +84,10 @@ bool SocketTCP::send(string data){
  */
 string SocketTCP::receive(int buffer_size){
     // char vector to store response
-    vector<char> buffer(buffer_size);
+    string buffer(buffer_size, '\0');
 
     // store number of received bytes
-    int received_bytes = recv(this->fd, buffer.data(), buffer.size(), 0);
+    int received_bytes = recv(this->fd, &buffer[0], buffer_size, 0);
     if(received_bytes == -1) 
         throw error(SOCK_RECV);
     if(received_bytes == 0){
@@ -95,5 +95,6 @@ string SocketTCP::receive(int buffer_size){
     }
     
     // return string of length of received bytes
-    return string(buffer.data(), received_bytes);
+    buffer.resize(received_bytes);
+    return buffer;
 }

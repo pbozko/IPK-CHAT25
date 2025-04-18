@@ -4,8 +4,8 @@
  * 16.04.2025
  */
 
-#ifndef MESSAGE_UDP_H
-#define MESSAGE_UDP_H
+#ifndef TCP_MESSAGE_H
+#define TCP_MESSAGE_H
 
 #include <string>
 #include <optional>
@@ -29,6 +29,7 @@ class MessageTCP {
         void build();
         void parse();
         void dump();
+        string get_payload();
 
     private:
         string type;

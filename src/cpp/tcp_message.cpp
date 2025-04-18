@@ -10,7 +10,7 @@
 #include "../header/message_values.h"
 #include "../header/error.h"
 #include "../header/tcp_message.h"
-#include "../header/string_manipulation.h"
+#include "../header/string_functions.h"
 
 using namespace std;
 
@@ -23,6 +23,10 @@ MessageTCP::MessageTCP(const string &type, const string &payload,
                     const optional<string> &is_ok)
                 : type(type), payload(payload), display_name(display_name), content(content),
                 username(username), secret(secret), channel(channel), is_ok(is_ok) {}
+
+string MessageTCP::get_payload(){
+    return this->payload;
+}
 
 void MessageTCP::build(){
     /**
