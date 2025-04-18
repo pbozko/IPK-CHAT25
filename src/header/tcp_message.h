@@ -17,76 +17,50 @@ using namespace std;
 
 class MessageTCP {
     public:
-        MessageTCP(MSG_VAL type,
-                const optional<string>& display_name = nullopt,
-                const optional<string>& content = nullopt,
-                const optional<string>& username = nullopt, 
-                const optional<string>& secret = nullopt,
-                const optional<string>& channel = nullopt,
-                const optional<string>& is_ok = nullopt)
-            : type(type), display_name(display_name), content(content),
-              username(username), secret(secret), channel(channel), is_ok(is_ok), 
-              payload("") {}
+        MessageTCP(const string& type, const string& payload,
+            const optional<string>& display_name = nullopt,
+            const optional<string>& content = nullopt,
+            const optional<string>& username = nullopt, 
+            const optional<string>& secret = nullopt,
+            const optional<string>& channel = nullopt,
+            const optional<string>& is_ok = nullopt);
 
-        void build(){
-            /**
-             * TODO: check if passed params are valid
-             */
-
-            switch(type){
-                case ERR:
-                    if(display_name && content){
-                        payload = "ERR FROM " + display_name.value() + " IS " + content.value();
-                    } //else throw error(MISSING_ATT);
-                    /**
-                     * TODO: what does missing attribute result in?
-                     */
-                    break;
-                case REPLY:
-                    if(content && is_ok){
-                        payload = "REPLY " + is_ok.value() + " IS " + content.value();
-                    }
-                    break;
-                case AUTH:
-                    if(username && display_name && secret){
-                        payload = "AUTH " + username.value() + " AS " + display_name.value() + " USING " + secret.value();
-                    }
-                    break;
-                case JOIN:
-                    if(channel && display_name){
-                        payload = "JOIN " + channel.value() + " AS " + display_name.value();
-                    } 
-                    break;
-                case MSG:
-                    if(display_name && content){
-                        payload = "MSG FROM " + display_name.value() + " IS " + content.value();
-                    }
-                    break;
-                case BYE:
-                    if(display_name){
-                        payload = "BYE FROM " + display_name.value();
-                    }
-                    break;
-                default:
-                    /**
-                     * TODO: what is default unexpected behavior?
-                     */
-            }
-
-            payload += "\r\n";
-        }
-
-        
+        class Builder;
+        void build();
+        void parse();
+        void dump();
 
     private:
-        MSG_VAL type;
+        string type;
+        string payload;
         optional<string> display_name;
         optional<string> content;
         optional<string> username;
         optional<string> secret;
         optional<string> channel;
         optional<string> is_ok;
+};
+
+class MessageTCP::Builder{
+    public:
+        Builder(const string& type, const string& payload);
+        Builder& set_display_name(const string& value);
+        Builder& set_content(const string& value);
+        Builder& set_username(const string& value);
+        Builder& set_secret(const string& value);
+        Builder& set_channel(const string& value);
+        Builder& set_is_ok(const string& value);
+        MessageTCP construct();
+
+    private:
+        string type;
         string payload;
+        optional<string> display_name;
+        optional<string> content;
+        optional<string> username;
+        optional<string> secret;
+        optional<string> channel;
+        optional<string> is_ok;
 };
 
 #endif
