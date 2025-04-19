@@ -287,6 +287,9 @@ FSMState ClientTCP::start_state(){
         if(file_descriptors[1].revents & POLLIN){
             string input;
             getline(cin, input);
+            if(cin.eof()){
+                return ENDING;
+            }
 
             return this->send_in_auth(input);
         }
@@ -340,16 +343,13 @@ FSMState ClientTCP::auth_state(){
         if(file_descriptors[1].revents & POLLIN){
             string input;
             getline(cin, input);
+            if(cin.eof()){
+                return ENDING;
+            }
 
             if(this->awaiting_reply){
                 this->input_buffer.push_back(input);
             } else return this->send_in_auth(input);
-            /**
-             * TODO: new command not allowed until REPLY OK confirmation.
-             *       add buffer for commands, execute them afterwards.
-             *       Or just say that such behavior is undefined.
-             *       ClientTCP attribute awaiting_response
-             */
         }
     }
     return AUTH;
@@ -390,6 +390,9 @@ FSMState ClientTCP::open_state(){
         if(file_descriptors[1].revents & POLLIN){
             string input;
             getline(cin, input);
+            if(cin.eof()){
+                return ENDING;
+            }
 
             return this->send_in_open(input);
         }
@@ -435,6 +438,9 @@ FSMState ClientTCP::join_state(){
         if(file_descriptors[1].revents & POLLIN){
             string input;
             getline(cin, input);
+            if(cin.eof()){
+                return ENDING;
+            }
 
             if(this->awaiting_reply){
                 this->input_buffer.push_back(input);
@@ -446,8 +452,3 @@ FSMState ClientTCP::join_state(){
     }
     return JOIN;
 }
-
-/**
- * TODO:
- * ctrl+d
- */
