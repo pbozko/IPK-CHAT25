@@ -31,12 +31,12 @@ arg_parser::arg_parser(int argc, char** argv){
     this->parse_input();
 
     if(!(this->t_flag && this->s_flag)){
-        throw error(ARG_REQ);
+        throw fatal_error(ARG_ERR, "Missing one or more required parameters (-t <protocol> -s <ip_addr/hostname>).");
     }
 
     transform(this->protocol.begin(), this->protocol.end(), this->protocol.begin(), ::tolower);
     if(this->protocol != "tcp" && this->protocol != "udp"){
-        throw error(PROTOCOL);
+        throw fatal_error(ARG_VAL, "Protocol can only be 'tcp' or 'udp'.");
     }
 }
 
@@ -44,9 +44,9 @@ void arg_parser::parse_input(){
     int min_argc = 5; // executable, protocol + value, server + value
     int max_argc = 12;
     if(argc < min_argc){
-        throw error(ARG_FEW);
+        throw fatal_error(ARG_ERR, "Too few arguments.");
     } else if(argc > max_argc){
-        throw error(ARG_MANY);
+        throw fatal_error(ARG_ERR, "Too many arguments.");
     }
 
     int arg = 0;
@@ -64,31 +64,31 @@ void arg_parser::parse_input(){
                 try{
                     this->port = static_cast<uint16_t>(stoi(optarg));
                 } catch(const invalid_argument& e){
-                    throw error(PORT_VAL);
+                    throw fatal_error(ARG_VAL, "Port number must be an integer.");
                 } catch(const out_of_range& e){
-                    throw error(CONVERSION);
+                    throw fatal_error(CONV_ERR, "Error converting specified port number to uint16_t.");
                 } break;
             case 'd':
                 try{
                     this->udp_timeout = static_cast<uint16_t>(stoi(optarg));
                 } catch(const invalid_argument& e){
-                    throw error(TIMEOUT_VAL);
+                    throw fatal_error(ARG_VAL, "UDP timeout value must be an integer.");
                 } catch(const out_of_range& e){
-                    throw error(CONVERSION);
+                    throw fatal_error(ARG_VAL, "Error converting UDP timeout value to uint16_t.");
                 } break;
             case 'r':
                 try{
                     this->udp_retransmission = static_cast<uint16_t>(stoi(optarg));
                 } catch(const invalid_argument& e){
-                    throw error(RETR_VAL);
+                    throw fatal_error(ARG_VAL, "UDP retransmission value must be an integer.");
                 } catch(const out_of_range& e){
-                    throw error(CONVERSION);
+                    throw fatal_error(ARG_VAL, "Error converting UDP retransmission value to uint16_t.");
                 } break;
             case 'h':
                 this->output_help_flag = true;
                 break;
             default:
-                throw error(ARG_WRONG);
+            throw fatal_error(ARG_ERR, "Unrecognized argument.");
                 break;
         }
     }

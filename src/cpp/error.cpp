@@ -12,41 +12,43 @@
 
 using namespace std;
 
-error::error(CError error_code){
+fatal_error::fatal_error(CError error_code, const string& details){
+    string error_message;
     switch(error_code){
-        case(ARG_FEW):
-            this->error_message = "Too few arguments.";
+        case(ARG_ERR):
+            error_message = "ARG_ERR: " + details;
             break;
-        case(ARG_MANY):
-            this->error_message = "Too many arguments.";
+        case(ARG_VAL):
+            error_message = "ARG_VAL_ERR: " + details;
+        case(CONV_ERR):
+            error_message = "CONV_ERR: " + details;
             break;
-        case(ARG_WRONG):
-            this->error_message = "Unrecognized arguments.";
+        case(SOCK_CREATE):
+            error_message = "SOCK_CREATE: " + details;
             break;
-        case(ARG_REQ):
-            this->error_message = "Missing required arguments.";
+        case(SOCK_SEND):
+            error_message = "SOCK_SEND: " + details;
             break;
-        case(PORT_VAL):
-            this->error_message = "Specified port needs to be a number.";
+        case(SOCK_RECV):
+            error_message = "SOCK_RECV: " + details;
             break;
-        case(TIMEOUT_VAL):
-            this->error_message = "Specified UDP confirmation timeout needs to be a number.";
+        case(SOCK_NONX):
+            error_message = "SOCK_NONX: " + details;
             break;
-        case(RETR_VAL):
-            this->error_message = "Specified maximum UDP retransmission count needs to be a number.";
+        case(SOCK_CLOS):
+            error_message = "SOCK_CLOS: " + details;
             break;
-        case(CONVERSION):
-            this->error_message = "Error occured during type conversion.";
+        case(SERV_RESL):
+            error_message = "SERV_RESL: " + details;
             break;
-        case(PROTOCOL):
-            this->error_message = "Specified L4 protocol is invalid. Options are either 'tcp' or 'udp'.";
-            break;
-        case(MISSING_ATT):
-            this->error_message = "Missing required message attribute.";
+        case(SERV_CONN):
+            error_message = "SERV_CONN: " + details;
             break;
     }
-
-    cerr << this->error_message << endl;
-    cerr << "Help message TODO" << endl;
+    cout << error_message << endl;
     exit(error_code);
+}
+
+void local_error(const string& error_message){
+    cout << "ERROR: " << error_message << "\n";
 }
