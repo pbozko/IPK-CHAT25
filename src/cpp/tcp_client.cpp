@@ -237,6 +237,12 @@ FSMState ClientTCP::empty_input_buffer(){
     }
 }
 
+FSMState ClientTCP::error_to_server(const string& error_message){
+    local_error(error_message); 
+    this->send_err(error_message);
+    return ENDING;
+}
+
 vector<pollfd> get_file_descriptors(SocketTCP socket){
     vector<pollfd> fds(2);
 
@@ -269,16 +275,12 @@ FSMState ClientTCP::start_state(){
             } else if(new_message.get_type() == "INCOMPLETE"){
                 return this->fsm_state;
             } else if(new_message.get_type() == "MALFORMED"){
-                local_error("Received malformed message from server: " + new_message.get_payload()); 
-                this->send_err("Received malformed message from server: " + new_message.get_payload());
-                return ENDING;
+                return this->error_to_server("Received malformed message from server: " + new_message.get_payload());
             } else{
                 /**
                  * TODO: make sure an outgoing ERR message should also be printed to stdout.
                  */
-                local_error("Received unexpected message."); 
-                this->send_err("Received unexpected message.");
-                return ENDING;
+                return this->error_to_server("Received unexpected message from server: " + new_message.get_payload());
             }
         }
 
@@ -328,14 +330,10 @@ FSMState ClientTCP::auth_state(){
             } else if(new_message.get_type() == "INCOMPLETE"){
                 return this->fsm_state;
             } else if(new_message.get_type() == "MALFORMED"){
-                local_error("Received malformed message from server: " + new_message.get_payload()); 
-                this->send_err("Received malformed message from server: " + new_message.get_payload());
-                return ENDING;
+                return this->error_to_server("Received malformed message from server: " + new_message.get_payload());
             }else{
                 // shouldnt occur
-                local_error("Received unexpected message."); 
-                this->send_err("Received unexpected message.");
-                return ENDING;
+                return this->error_to_server("Received unexpected message from server: " + new_message.get_payload());
             }
         }
 
@@ -382,14 +380,10 @@ FSMState ClientTCP::open_state(){
             } else if(new_message.get_type() == "INCOMPLETE"){
                 return this->fsm_state;
             } else if(new_message.get_type() == "MALFORMED"){
-                local_error("Received malformed message from server: " + new_message.get_payload()); 
-                this->send_err("Received malformed message from server: " + new_message.get_payload());
-                return ENDING;
+                return this->error_to_server("Received malformed message from server: " + new_message.get_payload());
             } else if(new_message.get_type() != "MSG"){
                 // shouldnt occur
-                local_error("Received unexpected message."); 
-                this->send_err("Received unexpected message.");
-                return ENDING;
+                return this->error_to_server("Received unexpected message from server: " + new_message.get_payload());
             }
         }
 
@@ -431,14 +425,10 @@ FSMState ClientTCP::join_state(){
             } else if(new_message.get_type() == "INCOMPLETE"){
                 return this->fsm_state;
             } else if(new_message.get_type() == "MALFORMED"){
-                local_error("Received malformed message from server: " + new_message.get_payload()); 
-                this->send_err("Received malformed message from server: " + new_message.get_payload());
-                return ENDING;
+                return this->error_to_server("Received malformed message from server: " + new_message.get_payload());
             } else if(new_message.get_type() != "MSG"){
                 // shouldnt occur
-                local_error("Received unexpected message."); 
-                this->send_err("Received unexpected message.");
-                return ENDING;
+                return this->error_to_server("Received unexpected message from server: " + new_message.get_payload());
             }
         }
 

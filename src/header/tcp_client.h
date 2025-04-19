@@ -28,7 +28,6 @@ class ClientTCP{
         ClientTCP(const string &server, uint16_t port);
         void connect_to_server();
         void close_connection();
-        void interrupt(int signum);
         void send_bye();
         void send_err(const string& error_message);
         bool send_msg(const string& text_content);
@@ -41,6 +40,7 @@ class ClientTCP{
         FSMState join_state();
         MessageTCP process_message();
         FSMState empty_input_buffer();
+        FSMState error_to_server(const string& error_message);
 
         string get_server();
         uint16_t get_port();
@@ -57,6 +57,7 @@ class ClientTCP{
         FSMState fsm_state;
         vector<string> input_buffer;
         bool awaiting_reply;
+        string input_chars;
 };
 
 #endif
