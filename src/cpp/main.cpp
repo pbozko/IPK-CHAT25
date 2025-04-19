@@ -24,6 +24,8 @@ void ctrlc(int signum){
 }
 
 int main(int argc, char* argv[]){
+    signal(SIGINT, ctrlc);
+
     arg_parser parser(argc, argv);
     bool is_tcp = (parser.get_protocol() == "tcp");
 
@@ -32,19 +34,15 @@ int main(int argc, char* argv[]){
         client_tcp->connect_to_server();
     }
 
-    signal(SIGINT, ctrlc);
-
     while(NEXT_STATE != END){
         FSM_STATE = NEXT_STATE;
         switch(FSM_STATE){
             case START:
-                //cerr << "START state" << endl;
                 if(is_tcp){
                     NEXT_STATE = client_tcp->start_state();
                 }
                 break;
             case AUTH:
-                //cerr << "AUTH state" << endl;
                 if(is_tcp){
                     NEXT_STATE = client_tcp->auth_state();
                 }
