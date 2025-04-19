@@ -7,6 +7,7 @@
 #include <regex>
 #include <vector>
 #include <sstream>
+#include <iostream>
 
 using namespace std;
 
@@ -34,10 +35,20 @@ vector<string> tokenize(const string &input){
     return tokens;
 }
 
+string get_full_message(string &stream_buffer){
+    const string delimiter = "\r\n";
+    size_t position = stream_buffer.find(delimiter);
+
+    if(position != string::npos){
+        string full_message = stream_buffer.substr(0, position + delimiter.length());
+        stream_buffer = stream_buffer.substr(position + delimiter.length());
+        return full_message;
+    } else return "";
+}
+
 bool check_id(const string &id){
-    regex id_regex(R"(^[A-Za-z0-9_-]{1,20}$)");
+    regex id_regex(R"(^[A-Za-z0-9._-]{1,20}$)");
     if(!regex_match(id, id_regex)){
-        //local error
         return false;
     }
     return true;
@@ -46,16 +57,14 @@ bool check_id(const string &id){
 bool check_secret(const string &secret){
     regex secret_regex(R"(^[A-Za-z0-9_-]{1,128}$)");
     if(!regex_match(secret, secret_regex)){
-        //local error
         return false;
     }
     return true;
 }
 
 bool check_content(const string &content){
-    regex content_regex(R"(^[\x20-\x7E\r\n]{1,60000}$)");
+    regex content_regex(R"(^[\x20-\x7E\r\n]*$)");
     if(!regex_match(content, content_regex)){
-        //local error
         return false;
     }
     return true;
@@ -64,7 +73,6 @@ bool check_content(const string &content){
 bool check_dname(const string &display_name){
     regex dname_regex(R"(^[\x20-\x7E]{1,20}$)");
     if(!regex_match(display_name, dname_regex)){
-        //local error
         return false;
     }
     return true;

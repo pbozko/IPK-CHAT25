@@ -28,73 +28,101 @@ string MessageTCP::get_payload(){
     return this->payload;
 }
 
-void MessageTCP::build(){
-    /**
-     * TODO: check if passed params are valid
-     */
-
-    if(type == "ERR"){
-        if(display_name && content){
-            payload = "ERR FROM " + display_name.value() + " IS " + content.value();
-        } //else throw error(MISSING_ATT);
-        /**
-         * TODO: what does missing attribute result in?
-         */
-    } else if(type == "REPLY"){
-        if(content && is_ok){
-            payload = "REPLY " + is_ok.value() + " IS " + content.value();
-        }
-    } else if(type == "AUTH"){
-        if(username && display_name && secret){
-            payload = "AUTH " + username.value() + " AS " + display_name.value() + " USING " + secret.value();
-        }
-    } else if(type == "JOIN"){
-        if(channel && display_name){
-            payload = "JOIN " + channel.value() + " AS " + display_name.value();
-        } 
-    } else if(type == "MSG"){
-        if(display_name && content){
-            payload = "MSG FROM " + display_name.value() + " IS " + content.value();
-        }
-    } else if(type == "BYE"){
-        if(display_name){
-            payload = "BYE FROM " + display_name.value();
-        }
-    } else{
-        /**
-         * TODO: what is default unexpected behavior?
-         */
-    }    
-    payload += "\r\n";
+string MessageTCP::get_type(){
+    return this->type;
 }
 
-void MessageTCP::parse(){
+string MessageTCP::get_display_name(){
+    return this->display_name.value();
+}
+
+string MessageTCP::get_content(){
+    return this->content.value();
+}
+
+string MessageTCP::get_username(){
+    return this->username.value();
+}
+
+string MessageTCP::get_secret(){
+    return this->secret.value();
+}
+
+string MessageTCP::get_channel(){
+    return this->channel.value();
+}
+
+string MessageTCP::get_is_ok(){
+    return this->is_ok.value();
+}
+
+bool MessageTCP::build(){
+    if(type == "ERR"){
+        if(display_name && check_dname(display_name.value()) && content && check_content(content.value())){
+            payload = "ERR FROM " + display_name.value() + " IS " + content.value();
+        } else return false;
+    } /*else if(type == "REPLY"){
+        if(content && check_content(content.value()) && is_ok && check_ok(is_ok.value())){
+            payload = "REPLY " + is_ok.value() + " IS " + content.value();                      client reply message doesn't exist
+        } else return false;
+    }*/ else if(type == "AUTH"){
+        if(username && check_id(username.value()) && display_name && check_dname(display_name.value()) && secret && check_secret(secret.value())){
+            payload = "AUTH " + username.value() + " AS " + display_name.value() + " USING " + secret.value();
+        } else return false;
+    } else if(type == "JOIN"){
+        if(channel && check_id(channel.value()) && display_name && check_dname(display_name.value())){
+            payload = "JOIN " + channel.value() + " AS " + display_name.value();
+        }else return false;
+    } else if(type == "MSG"){
+        if(display_name && check_dname(display_name.value()) && content && check_content(content.value())){
+            payload = "MSG FROM " + display_name.value() + " IS " + content.value();
+        } else return false;
+    } else if(type == "BYE"){
+        if(display_name && check_dname(display_name.value())){
+            payload = "BYE FROM " + display_name.value();
+        } else return false;
+    } else{
+        return false; // malformed message
+    }    
+    payload += "\r\n";
+    return true;
+}
+
+bool MessageTCP::parse(){
     if(type == "ERR"){
         display_name = extract_value(payload, "ERR FROM ", " IS ");
         content = extract_value(payload, " IS ", "\r\n");
-        /**
-         * TODO: malformed message
-         */
+        if(!(check_dname(display_name.value()) && check_content(content.value())))
+            return false;
     } else if(type == "REPLY"){
         is_ok = extract_value(payload, "REPLY ", " IS ");
         content = extract_value(payload, " IS ", "\r\n");
-    } else if(type == "AUTH"){
+        if(!check_content(content.value()))
+            return false;
+    } /*else if(type == "AUTH"){
         username = extract_value(payload, "AUTH ", " AS ");
         display_name = extract_value(payload, " AS ", " USING ");
         secret = extract_value(payload, " USING ", "\r\n");
-    } else if(type == "JOIN"){
+        if(!(check_id(username.value()) && check_dname(display_name.value()) && check_secret(secret.value()))) 
+            return false;   
+    } else if(type == "JOIN"){                                      server auth and join message does not exist
         channel = extract_value(payload, "JOIN ", " AS ");
         display_name = extract_value(payload, " AS ", "\r\n");
-    } else if(type == "MSG"){
+        if(!(check_id(channel.value()) && check_dname(display_name.value())))
+            return false;
+    } */else if(type == "MSG"){
         display_name = extract_value(payload, " FROM ", " IS ");
         content = extract_value(payload, " IS ", "\r\n");
+        if(!(check_dname(display_name.value()) && check_content(content.value())))
+            return false;
     } else if(type == "BYE"){
         display_name = extract_value(payload, " FROM ", "\r\n");
+        if(!check_dname(display_name.value()))
+            return false;
     } else{
-        /**
-         * TODO: what is default unexpected behavior?
-         */
+        return false; // malformed message
     }
+    return true;
 }
 
 void MessageTCP::dump(){

@@ -14,7 +14,7 @@ using namespace std;
 
 class SocketTCP{
     public:
-        SocketTCP(const bool protocol);
+        SocketTCP();
         int get_fd();
         sockaddr_in get_connection();
         void set_connection(in_addr_t ip_address, uint16_t port);

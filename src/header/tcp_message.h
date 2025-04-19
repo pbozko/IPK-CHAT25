@@ -26,10 +26,17 @@ class MessageTCP {
             const optional<string> &is_ok = nullopt);
 
         class Builder;
-        void build();
-        void parse();
+        bool build();
+        bool parse();
         void dump();
+        string get_type();
         string get_payload();
+        string get_display_name();
+        string get_content();
+        string get_username();
+        string get_secret();
+        string get_channel();
+        string get_is_ok();
 
     private:
         string type;

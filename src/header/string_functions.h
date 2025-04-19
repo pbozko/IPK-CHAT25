@@ -14,6 +14,8 @@ string extract_value(const string& payload, const string& start, const string& e
 
 vector<string> tokenize(const string &input);
 
+string get_full_message(string &stream_buffer);
+
 bool check_id(const string &id);
 
 bool check_secret(const string &secret);

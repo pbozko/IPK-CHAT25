@@ -18,7 +18,7 @@
  * Initializes default socket values
  * @return void
  */
-SocketTCP::SocketTCP(const bool protocol) 
+SocketTCP::SocketTCP() 
     : fd(-1), 
     connection({}) {}
 
@@ -29,7 +29,7 @@ SocketTCP::SocketTCP(const bool protocol)
 void SocketTCP::create(){
     this->fd = socket(AF_INET, SOCK_STREAM, 0);
     if(this->fd == - 1) 
-        throw error(SOCK_CREATE); 
+        throw fatal_error(SOCK_CREATE, "Failed to open TCP socket."); 
 }
 
 /**
@@ -73,7 +73,7 @@ sockaddr_in SocketTCP::get_connection(){
  */
 bool SocketTCP::send(string data){
     if(::send(this->fd, data.c_str(), data.length(), 0) == -1) 
-        throw error(SOCK_SEND);
+        throw fatal_error(SOCK_CREATE, "Failed to send through TCP socket."); 
     return true;
 }
 
@@ -89,10 +89,7 @@ string SocketTCP::receive(int buffer_size){
     // store number of received bytes
     int received_bytes = recv(this->fd, &buffer[0], buffer_size, 0);
     if(received_bytes == -1) 
-        throw error(SOCK_RECV);
-    if(received_bytes == 0){
-        // connection closed => graceful termination? ?required?
-    }
+        throw fatal_error(SOCK_CREATE, "Failed to receive from TCP socket."); 
     
     // return string of length of received bytes
     buffer.resize(received_bytes);
