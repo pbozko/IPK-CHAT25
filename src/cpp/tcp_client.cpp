@@ -307,10 +307,6 @@ bool ClientTCP::parse_as_command(const vector<string> &input){
         } else if(input[0] == "join" && this->fsm_state != OPEN){
             local_error("'/join' command not available in current state");
             return true;
-        // unrecognized command
-        } else if(input[0] != "/auth" && input[0] == "/join" && input[0][0] == '/'){
-            local_error("Unrecognized command. See 'help'.");
-            return true;
         }
     }
     return false;
