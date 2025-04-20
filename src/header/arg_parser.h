@@ -1,9 +1,8 @@
 /**
  * Martin Bozko
  * xbozko01
- * 15.04.2025
+ * 20.04.2025
  */
-
 #ifndef ARG_PARSER_H
 #define ARG_PARSER_H
 

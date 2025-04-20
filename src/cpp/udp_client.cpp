@@ -228,15 +228,26 @@ bool ClientUDP::check_reply(){
     return false;
 }
 
+/**
+ * Checks to see if passed input is a command
+ * Executes command if appropriate
+ * @param input input to be checked
+ * @return true if input starts with '/'
+ */
 bool ClientUDP::parse_as_command(const vector<string> &input){
+    // input has a valid size
     if(input.size() > 0){
+        // command must not have additional arugments
         if(input[0] == "/rename" && input.size() == 2){
+            // display name must conform to grammar
             if(check_dname(input[1])){
+                // set display name
                 this->display_name = input[1];
                 return true;
             }
             local_error("Invalid '/rename' command. See '/help'.");
-            return false;
+            return true;
+        // command must not have additional arugments
         } else if(input[0] == "/help" && input.size() == 1){
             cout    << "Available commands: " << endl
                     << "/auth <username> <secret> <display_name>    - log in to chat server." << endl
@@ -246,11 +257,17 @@ bool ClientUDP::parse_as_command(const vector<string> &input){
                     << "Ctrl + C                                    - send BYE to server and exit." << endl
                     << "Ctrl + D                                    - send BYE to server and exit." << endl;
             return true;
+        // dont allow command unless in appropriate state
         } else if(input[0] == "/auth" && this->fsm_state != START && this->fsm_state != AUTH){
             local_error("'/auth' command not available in current state");
             return true;
+        // dont allow command unless in appropriate state
         } else if(input[0] == "join" && this->fsm_state != OPEN){
             local_error("'/join' command not available in current state");
+            return true;
+        // unrecognized command
+        } else if(input[0] != "/auth" && input[0] == "/join" && input[0][0] == '/'){
+            local_error("Unrecognized command. See 'help'.");
             return true;
         }
     }
@@ -374,8 +391,13 @@ bool ClientUDP::retransmit_if_timeout(){
     return false;
 }
 
+/**
+ * Client process in START state
+ * @return next FSM state
+ */
 FSMState ClientUDP::start_state(){
     this->fsm_state = START;
+    // check if reply hasnt timed out
     if(this->check_reply()){
         try{
             this->error_to_server("Received no response, terminating connection.");
@@ -384,8 +406,11 @@ FSMState ClientUDP::start_state(){
             return ENDING;
         }   
     }
+
+    // create file descriptors for socket and stdin monitoring
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
 
+    // empty message buffer if possible
     if(!this->awaiting_reply && !this->awaiting_confirm && this->input_buffer.size() > 0){
         this->empty_input_buffer();
     }
@@ -393,12 +418,15 @@ FSMState ClientUDP::start_state(){
     while(true){
         int ret = poll(file_descriptors.data(), file_descriptors.size(), -1);
         if(ret == -1){
+            // poll() has failed - assume connection termination
             this->require_confirm = false;
             this->require_time = false;
             return ENDING;
         }
 
+        // data available on socket
         if(file_descriptors[0].revents & POLLIN){
+            // retransmit unconfirmed message instead of reading new one
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
                     this->require_confirm = false;
@@ -408,12 +436,15 @@ FSMState ClientUDP::start_state(){
                 return this->fsm_state;
             }
 
+            // get message from socket
             vector<uint8_t> incoming_payload = this->socket_i.receive(BUFFER_SIZE);
             MessageUDP new_message = this->process_message(incoming_payload);
             if(new_message.get_type() != CONFIRM_MSG){
+                // CONFIRM received message
                 this->send_confirm(new_message.get_id());
             }
 
+            // handle message
             switch(new_message.get_type()){
                 case ERR_MSG:
                 case BYE_MSG:
@@ -433,7 +464,9 @@ FSMState ClientUDP::start_state(){
             }
         }
 
+        // data available on stdin
         if(file_descriptors[1].revents & POLLIN){
+            // retransmit unconfirmed message instead of reading new one
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
                     this->require_confirm = false;
@@ -443,24 +476,33 @@ FSMState ClientUDP::start_state(){
                 return this->fsm_state;
             }
 
+            // get input
             string input;
             getline(cin, input);
             if(cin.eof()){
+                // ctrl+D
                 this->require_confirm = true;
                 this->require_time = false;
                 return BYE;
             }
 
+            // save input to buffer if waiting for message
             if(this->awaiting_confirm || this->awaiting_reply){
                 this->input_buffer.push_back(input);
+            // send input to server
             } else return this->send_in_auth(input);
         }
     }
     return START;
 }
 
+/**
+ * Client process in AUTH state
+ * @return next FSM state
+ */
 FSMState ClientUDP::auth_state(){
     this->fsm_state = AUTH;
+    // check if reply hasnt timed out
     if(this->check_reply()){
         try{
             this->error_to_server("Received no response, terminating connection.");
@@ -469,8 +511,11 @@ FSMState ClientUDP::auth_state(){
             return ENDING;
         }   
     }
+
+    // create file descriptors for socket and stdin monitoring
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
 
+    // empty message buffer if possible
     if(!this->awaiting_reply && !this->awaiting_confirm && this->input_buffer.size() > 0){
         this->empty_input_buffer();
     }
@@ -478,12 +523,15 @@ FSMState ClientUDP::auth_state(){
     while(true){
         int ret = poll(file_descriptors.data(), file_descriptors.size(), -1);
         if(ret == -1){
+             // poll() has failed - assume connection termination
             this->require_confirm = false;
             this->require_time = false;
             return ENDING;
         }
 
+        // data available on socket
         if(file_descriptors[0].revents & POLLIN){
+            // retransmit unconfirmed message instead of reading new one
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
                     this->require_confirm = false;
@@ -493,12 +541,15 @@ FSMState ClientUDP::auth_state(){
                 return this->fsm_state;
             }
 
+            // get message from socket
             vector<uint8_t> incoming_payload = this->socket_i.receive(BUFFER_SIZE);
             MessageUDP new_message = this->process_message(incoming_payload);
             if(new_message.get_type() != CONFIRM_MSG){
+                // CONFIRM received message
                 this->send_confirm(new_message.get_id());
             }
 
+            // handle message
             switch(new_message.get_type()){
                 case ERR_MSG:
                 case BYE_MSG:
@@ -525,7 +576,9 @@ FSMState ClientUDP::auth_state(){
             }
         }
 
+        // data available on stdin
         if(file_descriptors[1].revents & POLLIN){
+            // retransmit unconfirmed message instead of reading new one
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
                     this->require_confirm = false;
@@ -535,24 +588,33 @@ FSMState ClientUDP::auth_state(){
                 return this->fsm_state;
             }
 
+            // get input
             string input;
             getline(cin, input);
             if(cin.eof()){
+                // ctrl+D
                 this->require_confirm = true;
                 this->require_time = false;
                 return BYE;
             }
 
+            // save input to buffer if waiting for message
             if(this->awaiting_confirm || this->awaiting_reply){
                 this->input_buffer.push_back(input);
+            // send input to server
             } else return this->send_in_auth(input);
         }
     }
     return AUTH;
 }
 
+/**
+ * Client process in OPEN state
+ * @return next FSM state
+ */
 FSMState ClientUDP::open_state(){
     this->fsm_state = OPEN;
+    // check if reply hasnt timed out
     if(this->check_reply()){
         try{
             this->error_to_server("Received no response, terminating connection.");
@@ -561,8 +623,11 @@ FSMState ClientUDP::open_state(){
             return ENDING;
         }   
     }
+
+    // create file descriptors for socket and stdin monitoring
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
 
+    // empty message buffer if possible
     if(!this->awaiting_confirm && this->input_buffer.size() > 0){
         this->empty_input_buffer();
     }
@@ -570,12 +635,15 @@ FSMState ClientUDP::open_state(){
     while(true){
         int ret = poll(file_descriptors.data(), file_descriptors.size(), -1);
         if(ret == -1){
+            // poll() has failed - assume connection termination
             this->require_confirm = false;
             this->require_time = false;
             return ENDING;
         }
 
+        // data available on socket
         if(file_descriptors[0].revents & POLLIN){
+             // retransmit unconfirmed message instead of reading new one
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
                     this->require_confirm = false;
@@ -585,12 +653,15 @@ FSMState ClientUDP::open_state(){
                 return this->fsm_state;
             }
 
+            // get message from socket
             vector<uint8_t> incoming_payload = this->socket_i.receive(BUFFER_SIZE);
             MessageUDP new_message = this->process_message(incoming_payload);
             if(new_message.get_type() != CONFIRM_MSG){
+                // CONFIRM received message
                 this->send_confirm(new_message.get_id());
             }
 
+            // handle message
             switch(new_message.get_type()){
                 case ERR_MSG:
                 case BYE_MSG:
@@ -609,7 +680,9 @@ FSMState ClientUDP::open_state(){
             }
         }
 
+        // data available on stdin
         if(file_descriptors[1].revents & POLLIN){
+            // retransmit unconfirmed message instead of reading new one
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
                     this->require_confirm = false;
@@ -619,24 +692,33 @@ FSMState ClientUDP::open_state(){
                 return this->fsm_state;
             }
 
+            // get input
             string input;
             getline(cin, input);
             if(cin.eof()){
+                // ctrl+D
                 this->require_confirm = true;
                 this->require_time = false;
                 return BYE;
             }
 
+            // save input to buffer if waiting for message
             if(this->awaiting_confirm){
                 this->input_buffer.push_back(input);
+            // send input to server
             } else return this->send_in_open(input);
         }
     }
     return OPEN;
 }
 
+/**
+ * Client process in JOIN state
+ * @return next FSM state
+ */
 FSMState ClientUDP::join_state(){
     this->fsm_state = JOIN;
+    // check if reply hasnt timed out
     if(this->check_reply()){
         try{
             this->error_to_server("Received no response, terminating connection.");
@@ -645,8 +727,11 @@ FSMState ClientUDP::join_state(){
             return ENDING;
         }   
     }
+
+    // create file descriptors for socket and stdin monitoring
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
 
+    // empty message buffer if possible
     if(!this->awaiting_reply && !this->awaiting_confirm && this->input_buffer.size() > 0){
         this->empty_input_buffer();
     }
@@ -654,12 +739,15 @@ FSMState ClientUDP::join_state(){
     while(true){
         int ret = poll(file_descriptors.data(), file_descriptors.size(), -1);
         if(ret == -1){
+            // poll() has failed - assume connection termination
             this->require_confirm = false;
             this->require_time = false;
             return ENDING;
         }
 
+        // data available on socket
         if(file_descriptors[0].revents & POLLIN){
+            // retransmit unconfirmed message instead of reading new one
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
                     this->require_confirm = false;
@@ -669,12 +757,15 @@ FSMState ClientUDP::join_state(){
                 return this->fsm_state;
             }
 
+            // get message from socket
             vector<uint8_t> incoming_payload = this->socket_i.receive(BUFFER_SIZE);
             MessageUDP new_message = this->process_message(incoming_payload);
             if(new_message.get_type() != CONFIRM_MSG){
+                // CONFIRM received message
                 this->send_confirm(new_message.get_id());
             }
 
+            // handle message
             switch(new_message.get_type()){
                 case ERR_MSG:
                 case BYE_MSG:
@@ -686,9 +777,6 @@ FSMState ClientUDP::join_state(){
                     return this->error_to_server("Received malformed message from server: " + new_message.get_printable_payload());
                     break;
                 case REPLY_MSG:
-                    /**
-                     * TODO: exit after 5s without reply
-                     */
                     this->awaiting_reply = false;
                     return OPEN;
                     break;
@@ -697,8 +785,10 @@ FSMState ClientUDP::join_state(){
             }
         }
 
+        // data available on stdin
         if(file_descriptors[1].revents & POLLIN){
             if(this->retransmit_if_timeout()){
+                // retransmit unconfirmed message instead of reading new one
                 if(this->retry_count > 3){
                     this->require_confirm = false;
                     this->require_time = false;
@@ -707,16 +797,20 @@ FSMState ClientUDP::join_state(){
                 return this->fsm_state;
             }
 
+            // get input
             string input;
             getline(cin, input);
             if(cin.eof()){
+                // ctrl+D
                 this->require_confirm = true;
                 this->require_time = false;
                 return BYE;
             }
 
+            // save input to buffer if waiting for message
             if(this->awaiting_reply || this->awaiting_confirm){
                 this->input_buffer.push_back(input);
+            // send input to server
             } else if(!this->send_msg(input)){
                 local_error("Message you tried to send contains forbidden characters.");
             }
@@ -726,18 +820,27 @@ FSMState ClientUDP::join_state(){
     return JOIN;
 }
 
+/**
+ * UDP connection termination process
+ * @return void
+ */
 void ClientUDP::ending_state(){
+    // file descriptors for poll()
     pollfd pfd;
     pfd.fd = this->socket_i.get_fd();
     pfd.events = POLLIN;
 
+    // if expecting message confirmation
     if(require_confirm){
+        // attempt to read confirmation MAX+1 times (1 initial, 3 retransmit)
         for(uint8_t i = 0; i < this->max_retries + 1; i++){
             int ret = poll(&pfd, 1, this->timeout);
             if(ret > 0 && (pfd.revents & POLLIN)){
+                // get message from socket
                 vector<uint8_t> incoming_payload = this->socket_i.receive(BUFFER_SIZE);
                 MessageUDP new_message(static_cast<MSG_VAL>(incoming_payload[0]), incoming_payload);
         
+                // check if message is expected CONFIRM message
                 if(!incoming_payload.empty()){
                     if(new_message.parse()){
                         if(new_message.get_type() == CONFIRM_MSG){
@@ -745,8 +848,11 @@ void ClientUDP::ending_state(){
                             auto now = chrono::steady_clock::now();
                             auto ms = chrono::duration_cast<chrono::milliseconds>(now - past).count();
                             if(new_message.get_ref_id() == unconfirmed_message.first && ms < this->timeout){
+                                // successfully end connection termination
                                 return;
+                            // send only MAX amount of times, not +1 because initial message was already sent
                             } else if(i != max_retries){
+                                // resend unconfirmed message
                                 this->socket_i.send(last_message.get_payload());
                             }
                         }
@@ -756,18 +862,23 @@ void ClientUDP::ending_state(){
         }
     }
 
+    // if expecting server to send the same message multiple times
     if(require_time){
+        // attempt to confirm message MAX times
         for(uint8_t i = 0; i < this->max_retries; i++){
             int ret = poll(&pfd, 1, this->timeout);
             if(ret > 0 && (pfd.revents & POLLIN)){
+                // get message from socket
                 vector<uint8_t> incoming_payload = this->socket_i.receive(BUFFER_SIZE);
                 MessageUDP new_message(static_cast<MSG_VAL>(incoming_payload[0]), incoming_payload);
                 if(!incoming_payload.empty()){
                     if(new_message.parse()){
+                        // send confirmation
                         this->send_confirm(new_message.get_ref_id());
                     }
                 }
             } else{
+                // socket poll timed out without additional message - CONFIRM delivered successfully
                 return;
             }
         }

@@ -2,7 +2,7 @@
  * Martin Bozko
  * xbozko01
  * 18.11.2024 for ISA project
- * 18.04.2025 updated for IPK project
+ * 20.04.2025 updated for IPK project
  */
 #ifndef TCP_SOCKET_INTERFACE_H
 #define TCP_SOCKET_INTERFACE_H

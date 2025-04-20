@@ -1,7 +1,7 @@
 /**
  * Martin Bozko
  * xbozko01
- * 17.04.2025
+ * 20.04.2025
  */
 #ifndef STRING_FUNCTIONS_H
 #define STRING_FUNCTIONS_H

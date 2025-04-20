@@ -2,8 +2,13 @@
  * Martin Bozko
  * xbozko01
  * 20.04.2025
+ * 
+ * UDP Message class implementation
  */
 
+/**
+ * Headers
+ */
 #include <string>
 #include <optional>
 #include <iostream>
@@ -15,6 +20,9 @@
 
 using namespace std;
 
+/**
+ * Constructor
+ */
 MessageUDP::MessageUDP(const MSG_VAL type, const vector<uint8_t> &payload,
                     const optional<uint16_t> id,
                     const optional<uint8_t> result,
@@ -27,6 +35,9 @@ MessageUDP::MessageUDP(const MSG_VAL type, const vector<uint8_t> &payload,
                 : type(type), payload(payload), id(id), result(result), ref_id(ref_id), content(content), 
                 username(username), display_name(display_name), secret(secret), channel(channel) {}
 
+/**
+ * Getter/Setter functions
+ */
 vector<uint8_t> MessageUDP::get_payload(){
     return this->payload;
 }
@@ -67,22 +78,44 @@ string MessageUDP::get_channel(){
     return this->channel.value();
 }
 
+/**
+ * Converts vector<uint8_t> message payload to a printable string
+ * @return printable string
+ */
 string MessageUDP::get_printable_payload(){
     string printable_payload(this->get_payload().begin(), this->get_payload().end());
     return printable_payload;
 }
 
+/**
+ * Adds 2 bytes to the end of message payload
+ * @param payload message payload
+ * @param value 2B value to be added
+ * @return void
+ */
 void push_two_bytes(vector<uint8_t> &payload, uint16_t value){
     value = htons(value);
     payload.push_back((value >> 8) & 0xFF); // high byte
     payload.push_back(value & 0xFF);        // low byte
 }
 
+/**
+ * Reads 2 bytes from payload starting at index into uint16_t
+ * @param payload message payload
+ * @param index starting index of desired value
+ * @return 2 byte number
+ */
 uint16_t pop_two_bytes(const vector<uint8_t> &payload, size_t index){
     uint16_t value = (payload[index] << 8 | payload[index + 1]);
     return ntohs(value);
 }
 
+/**
+ * Pushes a vector of strings to the end of message payload
+ * @param payload message payload
+ * @param values vector of string values to be added
+ * @return void
+ */
 void push_string(vector<uint8_t> &payload, const vector<string> &values){
     for(string value : values){
         payload.insert(payload.end(), value.begin(), value.end());
@@ -90,21 +123,32 @@ void push_string(vector<uint8_t> &payload, const vector<string> &values){
     }
 }
 
+/**
+ * Reads n strings in payload starting at index
+ * @param payload message payload
+ * @param n number of strings to be read and returned
+ * @param index starting index of desired strings
+ * @return vector of strings
+ */
 vector<string> pop_string(vector<uint8_t> &payload, size_t n, size_t index){
     vector<string> values;
 
     for(size_t i = 0; i < n; i++){
         string value;
 
+        // read payload until string delimiter
         while(index < payload.size() && payload[index] != '\0'){
             value += static_cast<char>(payload[index]);
             index++;
         }
+        // add full string to vector
         values.push_back(value);
 
+        // check if not at the end of string
         if(index < payload.size() && payload[index] == '\0'){
             index++;
         } else{
+            // end of string but should read more, returns empty vector to indicate failure
             return {};
         }
     }
@@ -112,6 +156,10 @@ vector<string> pop_string(vector<uint8_t> &payload, size_t n, size_t index){
     return values;
 }
 
+/**
+ * Builds UDP message payload based on message type
+ * @return true if successful
+ */
 bool MessageUDP::build(){
     this->payload.push_back(this->type);
     switch(this->type){
@@ -151,12 +199,18 @@ bool MessageUDP::build(){
     return true;
 }
 
+/**
+ * Assigns values to appropriate message attributes from payload based on message type
+ * @return true if successful
+ */
 bool MessageUDP::parse(){
     size_t offset = 1;
     vector<string> string_values;
 
+    // get message type from first byte
     this->type = static_cast<MSG_VAL>(this->payload[0]);
 
+    // read 2B into ID for all messages except CONFIRM
     switch(this->type){
         case CONFIRM_MSG:
             this->ref_id = pop_two_bytes(this->payload, offset);
@@ -200,6 +254,7 @@ bool MessageUDP::parse(){
         default:
             break;
     }
+    // check parsed contents against message grammar
     if(this->content){
         if(!check_content(this->content.value()))
             return false;
@@ -224,26 +279,9 @@ bool MessageUDP::parse(){
     return true;
 }
 
-void MessageUDP::dump(){
-    cout << "type: " << type << endl;
-    if(display_name)
-        cout << "id: " << id.value() << endl;
-    if(display_name)
-        cout << "result: " << result.value() << endl;
-    if(display_name)
-        cout << "ref_id: " << ref_id.value() << endl;
-    if(display_name)
-        cout << "display_name: " << display_name.value() << endl;
-    if(content)
-        cout << "content: " << content.value() << endl;
-    if(username)
-        cout << "username: " << username.value() << endl;
-    if(secret)
-        cout << "secret: " << secret.value() << endl;
-    if(channel)
-        cout << "channel: " << channel.value() << endl;
-}
-
+/**
+ * Builder class to simplify message creation with optional attributes
+ */
 MessageUDP::Builder::Builder(const MSG_VAL type, const vector<uint8_t> &payload)
     : type(type), payload(payload) {}
 
@@ -287,6 +325,33 @@ MessageUDP::Builder& MessageUDP::Builder::set_channel(const string &value){
     return *this;
 }
 
+/**
+ * Finalizes the message creation
+ * @return MessageUDP object with all desired fields filled in
+ */
 MessageUDP MessageUDP::Builder::construct(){
     return MessageUDP(type, payload, id, result, ref_id, content, username, display_name, secret, channel);
+}
+
+/**
+ * DEBUG FUNCTION
+ */
+void MessageUDP::dump(){
+    cout << "type: " << type << endl;
+    if(display_name)
+        cout << "id: " << id.value() << endl;
+    if(display_name)
+        cout << "result: " << result.value() << endl;
+    if(display_name)
+        cout << "ref_id: " << ref_id.value() << endl;
+    if(display_name)
+        cout << "display_name: " << display_name.value() << endl;
+    if(content)
+        cout << "content: " << content.value() << endl;
+    if(username)
+        cout << "username: " << username.value() << endl;
+    if(secret)
+        cout << "secret: " << secret.value() << endl;
+    if(channel)
+        cout << "channel: " << channel.value() << endl;
 }

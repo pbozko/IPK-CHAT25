@@ -2,8 +2,13 @@
  * Martin Bozko
  * xbozko01
  * 18.11.2024 for ISA project
- * 18.04.2025 updated for IPK project
- * Socket interface class implementation
+ * 20.04.2025 updated for IPK project
+ * 
+ * TCP Socket interface class implementation
+ */
+
+/**
+ * Headers
  */
 #include <sys/socket.h>
 #include <string>
@@ -41,7 +46,7 @@ void SocketTCP::close(){
 }
 
 /**
- * @return socket field descriptor
+ * @return socket file descriptor
  */
 int SocketTCP::get_fd(){
     return this->fd;
@@ -83,15 +88,15 @@ bool SocketTCP::send(const string &data){
  * @return string received data
  */
 string SocketTCP::receive(int buffer_size){
-    // char vector to store response
+    // string to store data
     string buffer(buffer_size, '\0');
 
     // store number of received bytes
     int received_bytes = recv(this->fd, &buffer[0], buffer_size, 0);
+    
     if(received_bytes == -1) 
         throw fatal_error(SOCK_CREATE, "Failed to receive from TCP socket."); 
     
-    // return string of length of received bytes
     buffer.resize(received_bytes);
     return buffer;
 }

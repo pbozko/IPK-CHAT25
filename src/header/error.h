@@ -2,7 +2,7 @@
  * Martin Bozko
  * xbozko01
  * 18.11.2024 for ISA project
- * 15.04.2025 updated for IPK project
+ * 20.04.2025 updated for IPK project
  */
 #ifndef ERROR_H
 #define ERROR_H

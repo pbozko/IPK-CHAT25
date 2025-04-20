@@ -1,7 +1,7 @@
 /**
  * Martin Bozko
  * xbozko01
- * 16.04.2025
+ * 20.04.2025
  */
 #ifndef UDP_MESSSAGE_H
 #define UDP_MESSSAGE_H
@@ -43,7 +43,7 @@ class MessageUDP {
         string get_printable_payload();
 
     private:
-        MSG_VAL type; //(uint8_t)
+        MSG_VAL type;
         vector<uint8_t> payload;
         optional<uint16_t> id;
         optional<uint8_t> result;
@@ -69,7 +69,7 @@ class MessageUDP::Builder{
         MessageUDP construct();
 
     private:
-        MSG_VAL type; //(uint8_t)
+        MSG_VAL type;
         vector<uint8_t> payload;
         optional<uint16_t> id;
         optional<uint8_t> result;

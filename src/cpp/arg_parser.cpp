@@ -7,9 +7,9 @@
  * Argument parser class implementation
  */
 
- /**
-  * Headers
-  */
+/**
+ * Headers
+ */
 #include <getopt.h>
 #include <iostream>
 #include <algorithm>
@@ -162,4 +162,3 @@ void arg_parser::print_info(){
     cout << "udp_retransmission: " << this->udp_retransmission << endl;
     cout << "output_help_flag: " << this->output_help_flag << endl;
 }
- 

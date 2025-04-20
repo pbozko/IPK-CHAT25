@@ -1,9 +1,14 @@
 /**
  * Martin Bozko
  * xbozko01
- * 16.04.2025
+ * 20.04.2025
+ * 
+ * TCP Message class implementation
  */
 
+/**
+ * Headers
+ */
 #include <string>
 #include <optional>
 #include <iostream>
@@ -13,6 +18,9 @@
 
 using namespace std;
 
+/**
+ * Constructor
+ */
 MessageTCP::MessageTCP(const string &type, const string &payload,
                     const optional<string> &display_name,
                     const optional<string> &content,
@@ -23,6 +31,9 @@ MessageTCP::MessageTCP(const string &type, const string &payload,
                 : type(type), payload(payload), display_name(display_name), content(content),
                 username(username), secret(secret), channel(channel), is_ok(is_ok) {}
 
+/**
+ * Getter/Setter functions
+ */
 string MessageTCP::get_payload(){
     return this->payload;
 }
@@ -55,16 +66,16 @@ string MessageTCP::get_is_ok(){
     return this->is_ok.value();
 }
 
+/**
+ * Builds TCP message payload based on message type
+ * @return true if successful
+ */
 bool MessageTCP::build(){
     if(type == "ERR"){
         if(display_name && check_dname(display_name.value()) && content && check_content(content.value())){
             payload = "ERR FROM " + display_name.value() + " IS " + content.value();
         } else return false;
-    } /*else if(type == "REPLY"){
-        if(content && check_content(content.value()) && is_ok && check_ok(is_ok.value())){
-            payload = "REPLY " + is_ok.value() + " IS " + content.value();                      client reply message doesn't exist
-        } else return false;
-    }*/ else if(type == "AUTH"){
+    } else if(type == "AUTH"){
         if(username && check_id(username.value()) && display_name && check_dname(display_name.value()) && secret && check_secret(secret.value())){
             payload = "AUTH " + username.value() + " AS " + display_name.value() + " USING " + secret.value();
         } else return false;
@@ -87,6 +98,10 @@ bool MessageTCP::build(){
     return true;
 }
 
+/**
+ * Assigns values to appropriate message attributes from payload based on message type
+ * @return true if successful
+ */
 bool MessageTCP::parse(){
     if(type == "ERR"){
         display_name = extract_value(payload, "ERR FROM ", " IS ");
@@ -113,6 +128,9 @@ bool MessageTCP::parse(){
     return true;
 }
 
+/**
+ * Builder class to simplify message creation with optional attributes
+ */
 MessageTCP::Builder::Builder(const string &type, const string &payload)
     : type(type), payload(payload) {}
 
@@ -146,6 +164,10 @@ MessageTCP::Builder& MessageTCP::Builder::set_is_ok(const string &value){
     return *this;
 }
 
+/**
+ * Finalizes the message creation
+ * @return MessageTCP object with all desired fields filled in
+ */
 MessageTCP MessageTCP::Builder::construct(){
     return MessageTCP(type, payload, display_name, content, username, secret, channel, is_ok);
 }

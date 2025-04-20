@@ -6,6 +6,10 @@
  * 
  * Custom error definitions
  */
+
+/**
+ * Headers
+ */
 #include <string>
 #include "../header/error.h"
 #include <iostream>

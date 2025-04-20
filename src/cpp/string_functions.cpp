@@ -5,6 +5,10 @@
  * 
  * Helper functions, mainly for string operations
  */
+
+/**
+ * Headers
+ */
 #include <string>
 #include <regex>
 #include <vector>
