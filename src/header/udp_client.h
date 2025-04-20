@@ -28,6 +28,7 @@ class ClientUDP{
         bool send_msg(const string& text_content);
         void send_confirm(const uint16_t ref_id);
         FSMState error_to_server(const string& error_message);
+        bool parse_as_command(const vector<string> &input);
 
         FSMState send_in_auth(const string& input);
         FSMState send_in_open(const string& input);

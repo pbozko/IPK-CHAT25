@@ -173,23 +173,26 @@ void ClientUDP::send_err(const string& error_message){
 }
 
 bool ClientUDP::send_msg(const string& text_content){
-    if(this->socket_i.get_fd() > 0){
-        MessageUDP msg_message = MessageUDP::Builder(MSG_MSG,{})
-                                    .set_id(this->message_id)
-                                    .set_display_name(this->display_name)
-                                    .set_content(text_content)
-                                    .construct();
-        if(msg_message.build()){
-            this->socket_i.send(msg_message.get_payload());
-            this->last_message = msg_message;
-            this->unconfirmed_message = {msg_message.get_id(), chrono::steady_clock::now()};
-            this->awaiting_confirm = true;
-            this->message_id++;
-            return true;
-        } else return false;
-    } else {
-        throw fatal_error(SOCK_NONX, "Failed to accesss UDP socket.");
+    if(!parse_as_command(tokenize(text_content))){
+        if(this->socket_i.get_fd() > 0){
+            MessageUDP msg_message = MessageUDP::Builder(MSG_MSG,{})
+                                        .set_id(this->message_id)
+                                        .set_display_name(this->display_name)
+                                        .set_content(text_content)
+                                        .construct();
+            if(msg_message.build()){
+                this->socket_i.send(msg_message.get_payload());
+                this->last_message = msg_message;
+                this->unconfirmed_message = {msg_message.get_id(), chrono::steady_clock::now()};
+                this->awaiting_confirm = true;
+                this->message_id++;
+                return true;
+            } else return false;
+        } else {
+            throw fatal_error(SOCK_NONX, "Failed to accesss UDP socket.");
+        }
     }
+    return true;
 }
 
 void ClientUDP::send_confirm(uint16_t ref_id){
@@ -213,36 +216,67 @@ FSMState ClientUDP::error_to_server(const string& error_message){
     return ENDING;
 }
 
+bool ClientUDP::parse_as_command(const vector<string> &input){
+    if(input.size() > 0){
+        if(input[0] == "/rename" && input.size() == 2){
+            if(check_dname(input[1])){
+                this->display_name = input[1];
+                return true;
+            }
+            local_error("Invalid '/rename' command. See '/help'.");
+            return false;
+        } else if(input[0] == "/help" && input.size() == 1){
+            cout    << "Available commands: " << endl
+                    << "/auth <username> <secret> <display_name>    - log in to chat server." << endl
+                    << "/join <channel_id>                          - change chat channel." << endl
+                    << "/rename <display_name>                      - changes session display name." << endl
+                    << "/help                                       - print this help message." << endl
+                    << "Ctrl + C                                    - send BYE to server and exit." << endl
+                    << "Ctrl + D                                    - send BYE to server and exit." << endl;
+            return true;
+        } else if(input[0] == "/auth" && this->fsm_state != START && this->fsm_state != AUTH){
+            local_error("'/auth' command not available in current state");
+            return true;
+        } else if(input[0] == "join" && this->fsm_state != OPEN){
+            local_error("'/join' command not available in current state");
+            return true;
+        }
+    }
+    return false;
+}
+
 FSMState ClientUDP::send_in_auth(const string& input){
     vector<string> message_parts = tokenize(input);
-    if(message_parts.size() != 4){
-        local_error("Wrong command format. Expecting '/auth <username> <secret> <display_name>'.");
-        return this->fsm_state;
-    } else{
-        string  command = message_parts[0], 
-                username = message_parts[1], 
-                secret = message_parts[2], 
-                display_name = message_parts[3];
-        
-        if(command == "/auth"){
-            MessageUDP auth_message = MessageUDP::Builder(AUTH_MSG, {})
-                                            .set_id(this->message_id)
-                                            .set_username(username)
-                                            .set_display_name(display_name)
-                                            .set_secret(secret)
-                                            .construct();
-            if(auth_message.build()){
-                this->set_display_name(display_name);
-                this->socket_i.send(auth_message.get_payload());
-                this->last_message = auth_message;
-                this->unconfirmed_message = {auth_message.get_id(), chrono::steady_clock::now()};
-                this->awaiting_reply = true;
-                this->awaiting_confirm = true;
-                this->message_id++;
-                return AUTH;
-            } else{
-                local_error("Wrong command format. Expecting '/auth <username> <secret> <display_name>'.");
-                return this->fsm_state;
+    if(!parse_as_command(message_parts)){
+        if(message_parts.size() != 4){
+            local_error("Wrong command format. Expecting '/auth <username> <secret> <display_name>'.");
+            return this->fsm_state;
+        } else{
+            string  command = message_parts[0], 
+                    username = message_parts[1], 
+                    secret = message_parts[2], 
+                    display_name = message_parts[3];
+            
+            if(command == "/auth"){
+                MessageUDP auth_message = MessageUDP::Builder(AUTH_MSG, {})
+                                                .set_id(this->message_id)
+                                                .set_username(username)
+                                                .set_display_name(display_name)
+                                                .set_secret(secret)
+                                                .construct();
+                if(auth_message.build()){
+                    this->set_display_name(display_name);
+                    this->socket_i.send(auth_message.get_payload());
+                    this->last_message = auth_message;
+                    this->unconfirmed_message = {auth_message.get_id(), chrono::steady_clock::now()};
+                    this->awaiting_reply = true;
+                    this->awaiting_confirm = true;
+                    this->message_id++;
+                    return AUTH;
+                } else{
+                    local_error("Wrong command format. Expecting '/auth <username> <secret> <display_name>'.");
+                    return this->fsm_state;
+                }
             }
         }
     }
@@ -251,33 +285,36 @@ FSMState ClientUDP::send_in_auth(const string& input){
 
 FSMState ClientUDP::send_in_open(const string& input){
     vector<string> message_parts = tokenize(input);
-    if(message_parts.size() == 2 && message_parts[0] == "/join"){
-        string command = message_parts[0],
-               channel = message_parts[1];
-
-        MessageUDP join_message = MessageUDP::Builder(JOIN_MSG, {})
-                                        .set_id(this->message_id)
-                                        .set_channel(channel)
-                                        .set_display_name(display_name)
-                                        .construct();
-        if(join_message.build()){
-            this->socket_i.send(join_message.get_payload());
-            this->last_message = join_message;
-            this->unconfirmed_message = {join_message.get_id(), chrono::steady_clock::now()};
-            this->awaiting_reply = true;
-            this->awaiting_confirm = true;
-            this->message_id++;
-            return JOIN;
+    if(!parse_as_command(message_parts)){
+        if(message_parts.size() == 2 && message_parts[0] == "/join"){
+            string command = message_parts[0],
+                   channel = message_parts[1];
+    
+            MessageUDP join_message = MessageUDP::Builder(JOIN_MSG, {})
+                                            .set_id(this->message_id)
+                                            .set_channel(channel)
+                                            .set_display_name(display_name)
+                                            .construct();
+            if(join_message.build()){
+                this->socket_i.send(join_message.get_payload());
+                this->last_message = join_message;
+                this->unconfirmed_message = {join_message.get_id(), chrono::steady_clock::now()};
+                this->awaiting_reply = true;
+                this->awaiting_confirm = true;
+                this->message_id++;
+                return JOIN;
+            } else{
+                local_error("/join command contains forbidden characters.");
+                return this->fsm_state;
+            }
         } else{
-            local_error("/join command contains forbidden characters.");
+            if(!this->send_msg(input)){
+                local_error("Message you tried to send contains forbidden characters.");
+            }
             return this->fsm_state;
-        }
-    } else{
-        if(!this->send_msg(input)){
-            local_error("Message you tried to send contains forbidden characters.");
-        }
-        return this->fsm_state;
-    } 
+        } 
+    }
+    return this->fsm_state;
 }
 
 FSMState ClientUDP::empty_input_buffer(){

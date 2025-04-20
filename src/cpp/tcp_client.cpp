@@ -136,7 +136,7 @@ void ClientTCP::send_bye(){
     }
 }
 
-void ClientTCP::send_err(const string& error_message){
+void ClientTCP::send_err(const string &error_message){
     if(this->socket_i.get_fd() > 0){
         MessageTCP err_message = MessageTCP::Builder("ERR", "")
                                     .set_display_name(this->display_name)
@@ -149,52 +149,86 @@ void ClientTCP::send_err(const string& error_message){
     }
 }
 
-bool ClientTCP::send_msg(const string& text_content){
-    if(this->socket_i.get_fd() > 0){
-        MessageTCP msg_message = MessageTCP::Builder("MSG", "")
-                                    .set_display_name(this->display_name)
-                                    .set_content(text_content)
-                                    .construct();
-        if(msg_message.build()){
-            this->socket_i.send(msg_message.get_payload());
-            return true;
-        } else return false;
-    } else {
-        throw fatal_error(SOCK_NONX, "Failed to accesss TCP socket.");
+bool ClientTCP::send_msg(const string &text_content){
+    if(!parse_as_command(tokenize(text_content))){
+        if(this->socket_i.get_fd() > 0){
+            MessageTCP msg_message = MessageTCP::Builder("MSG", "")
+                                        .set_display_name(this->display_name)
+                                        .set_content(text_content)
+                                        .construct();
+            if(msg_message.build()){
+                this->socket_i.send(msg_message.get_payload());
+                return true;
+            } else return false;
+        } else {
+            throw fatal_error(SOCK_NONX, "Failed to accesss TCP socket.");
+        }
     }
+    return true;
 }
 
-FSMState ClientTCP::error_to_server(const string& error_message){
+FSMState ClientTCP::error_to_server(const string &error_message){
     local_error(error_message); 
     this->send_err(error_message);
     return ENDING;
 }
 
-FSMState ClientTCP::send_in_auth(const string& input){
+bool ClientTCP::parse_as_command(const vector<string> &input){
+    if(input.size() > 0){
+        if(input[0] == "/rename" && input.size() == 2){
+            if(check_dname(input[1])){
+                this->display_name = input[1];
+                return true;
+            }
+            local_error("Invalid '/rename' command. See '/help'.");
+            return false;
+        } else if(input[0] == "/help" && input.size() == 1){
+            cout    << "Available commands: " << endl
+                    << "/auth <username> <secret> <display_name>    - log in to chat server." << endl
+                    << "/join <channel_id>                          - change chat channel." << endl
+                    << "/rename <display_name>                      - changes session display name." << endl
+                    << "/help                                       - print this help message." << endl
+                    << "Ctrl + C                                    - send BYE to server and exit." << endl
+                    << "Ctrl + D                                    - send BYE to server and exit." << endl;
+            return true;
+        } else if(input[0] == "/auth" && this->fsm_state != START && this->fsm_state != AUTH){
+            local_error("'/auth' command not available in current state");
+            return true;
+        } else if(input[0] == "join" && this->fsm_state != OPEN){
+            local_error("'/join' command not available in current state");
+            return true;
+        }
+    }
+    return false;
+}
+
+FSMState ClientTCP::send_in_auth(const string &input){
     vector<string> message_parts = tokenize(input);
-    if(message_parts.size() != 4){
-        local_error("Wrong command format. Expecting '/auth <username> <secret> <display_name>'.");
-        return this->fsm_state;
-    } else{
-        string  command = message_parts[0], 
-                username = message_parts[1], 
-                secret = message_parts[2], 
-                display_name = message_parts[3];
-        
-        if(command == "/auth"){
-            MessageTCP auth_message = MessageTCP::Builder("AUTH", "")
-                                            .set_username(username)
-                                            .set_display_name(display_name)
-                                            .set_secret(secret)
-                                            .construct();
-            if(auth_message.build()){
-                this->set_display_name(display_name);
-                this->socket_i.send(auth_message.get_payload());
-                this->awaiting_reply = true;
-                return AUTH;
-            } else{
-                local_error("Wrong command format. Expecting '/auth <username> <secret> <display_name>'.");
-                return this->fsm_state;
+    if(!parse_as_command(message_parts)){
+        if(message_parts.size() != 4){
+            local_error("Wrong command format. Expecting '/auth <username> <secret> <display_name>'.");
+            return this->fsm_state;
+        } else{
+            string  command = message_parts[0], 
+                    username = message_parts[1], 
+                    secret = message_parts[2], 
+                    display_name = message_parts[3];
+            
+            if(command == "/auth"){
+                MessageTCP auth_message = MessageTCP::Builder("AUTH", "")
+                                                .set_username(username)
+                                                .set_display_name(display_name)
+                                                .set_secret(secret)
+                                                .construct();
+                if(auth_message.build()){
+                    this->set_display_name(display_name);
+                    this->socket_i.send(auth_message.get_payload());
+                    this->awaiting_reply = true;
+                    return AUTH;
+                } else{
+                    local_error("Wrong command format. Expecting '/auth <username> <secret> <display_name>'.");
+                    return this->fsm_state;
+                }
             }
         }
     }
@@ -203,28 +237,31 @@ FSMState ClientTCP::send_in_auth(const string& input){
 
 FSMState ClientTCP::send_in_open(const string& input){
     vector<string> message_parts = tokenize(input);
-    if(message_parts.size() == 2 && message_parts[0] == "/join"){
-        string command = message_parts[0],
-               channel = message_parts[1];
-
-        MessageTCP join_message = MessageTCP::Builder("JOIN", "")
-                                        .set_channel(channel)
-                                        .set_display_name(display_name)
-                                        .construct();
-        if(join_message.build()){
-            this->socket_i.send(join_message.get_payload());
-            this->awaiting_reply = true;
-            return JOIN;
+    if(!parse_as_command(message_parts)){
+        if(message_parts.size() == 2 && message_parts[0] == "/join"){
+            string command = message_parts[0],
+                   channel = message_parts[1];
+    
+            MessageTCP join_message = MessageTCP::Builder("JOIN", "")
+                                            .set_channel(channel)
+                                            .set_display_name(display_name)
+                                            .construct();
+            if(join_message.build()){
+                this->socket_i.send(join_message.get_payload());
+                this->awaiting_reply = true;
+                return JOIN;
+            } else{
+                local_error("/join command contains forbidden characters.");
+                return this->fsm_state;
+            }
         } else{
-            local_error("/join command contains forbidden characters.");
+            if(!this->send_msg(input)){
+                local_error("Message you tried to send contains forbidden characters.");
+            }
             return this->fsm_state;
-        }
-    } else{
-        if(!this->send_msg(input)){
-            local_error("Message you tried to send contains forbidden characters.");
-        }
-        return this->fsm_state;
-    } 
+        } 
+    }
+    return this->fsm_state;
 }
 
 FSMState ClientTCP::read_stream(){
@@ -277,9 +314,6 @@ FSMState ClientTCP::start_state(){
             } else if(new_message.get_type() == "MALFORMED"){
                 return this->error_to_server("Received malformed message from server: " + new_message.get_payload());
             } else{
-                /**
-                 * TODO: make sure an outgoing ERR message should also be printed to stdout.
-                 */
                 return this->error_to_server("Received unexpected message from server: " + new_message.get_payload());
             }
         }
@@ -453,9 +487,6 @@ FSMState ClientTCP::join_state(){
                 local_error("Message you tried to send contains forbidden characters.");
             }
             return this->fsm_state;
-            /**
-             * TODO: messages prefixed with '/' shouldnt be valid?
-             */
         }
     }
     return JOIN;

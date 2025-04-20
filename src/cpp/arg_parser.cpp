@@ -38,6 +38,17 @@ arg_parser::arg_parser(int argc, char** argv){
     // parse arguments
     this->parse_input();
 
+    if(this->output_help_flag){
+        cout    << "Available commands: " << endl
+                << "/auth <username> <secret> <display_name>    - log in to chat server." << endl
+                << "/join <channel_id>                          - change chat channel." << endl
+                << "/rename <display_name>                      - changes session display name." << endl
+                << "/help                                       - print this help message." << endl
+                << "Ctrl + C                                    - send BYE to server and exit." << endl
+                << "Ctrl + D                                    - send BYE to server and exit." << endl;
+        exit(0);
+    }
+
     // check for necessary arguments
     if(!(this->t_flag && this->s_flag)){
         throw fatal_error(ARG_ERR, "Missing one or more required parameters (-t <protocol> -s <ip_addr/hostname>).");

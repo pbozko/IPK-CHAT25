@@ -152,9 +152,6 @@ bool MessageUDP::build(){
 }
 
 bool MessageUDP::parse(){
-    /**
-     * TODO: return false on malformed message - not conforming to grammar
-     */
     size_t offset = 1;
     vector<string> string_values;
 
@@ -203,6 +200,27 @@ bool MessageUDP::parse(){
         default:
             break;
     }
+    if(this->content){
+        if(!check_content(this->content.value()))
+            return false;
+    }
+    if(this->username){
+        if(!check_id(this->username.value()))
+            return false;
+    }
+    if(this->channel){
+        if(!check_id(this->channel.value()))
+            return false;
+    }
+    if(this->display_name){
+        if(!check_dname(this->display_name.value()))
+            return false;
+    }
+    if(this->secret){
+        if(!check_secret(this->secret.value()))
+        return false;
+    }
+
     return true;
 }
 

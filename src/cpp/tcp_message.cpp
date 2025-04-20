@@ -98,18 +98,7 @@ bool MessageTCP::parse(){
         content = extract_value(payload, " IS ", "\r\n");
         if(!check_content(content.value()))
             return false;
-    } /*else if(type == "AUTH"){
-        username = extract_value(payload, "AUTH ", " AS ");
-        display_name = extract_value(payload, " AS ", " USING ");
-        secret = extract_value(payload, " USING ", "\r\n");
-        if(!(check_id(username.value()) && check_dname(display_name.value()) && check_secret(secret.value()))) 
-            return false;   
-    } else if(type == "JOIN"){                                      server auth and join message does not exist
-        channel = extract_value(payload, "JOIN ", " AS ");
-        display_name = extract_value(payload, " AS ", "\r\n");
-        if(!(check_id(channel.value()) && check_dname(display_name.value())))
-            return false;
-    } */else if(type == "MSG"){
+    } else if(type == "MSG"){
         display_name = extract_value(payload, " FROM ", " IS ");
         content = extract_value(payload, " IS ", "\r\n");
         if(!(check_dname(display_name.value()) && check_content(content.value())))
@@ -122,23 +111,6 @@ bool MessageTCP::parse(){
         return false; // malformed message
     }
     return true;
-}
-
-void MessageTCP::dump(){
-    cout << "type: " << type << endl;
-    cout << "payload: " << payload;
-    if(display_name)
-        cout << "display_name: " << display_name.value() << endl;
-    if(content)
-        cout << "content: " << content.value() << endl;
-    if(username)
-        cout << "username: " << username.value() << endl;
-    if(secret)
-        cout << "secret: " << secret.value() << endl;
-    if(channel)
-        cout << "channel: " << channel.value() << endl;
-    if(is_ok)
-        cout << "is_ok: " << is_ok.value() << endl;
 }
 
 MessageTCP::Builder::Builder(const string &type, const string &payload)
@@ -176,4 +148,24 @@ MessageTCP::Builder& MessageTCP::Builder::set_is_ok(const string &value){
 
 MessageTCP MessageTCP::Builder::construct(){
     return MessageTCP(type, payload, display_name, content, username, secret, channel, is_ok);
+}
+
+/**
+ * DEBUG FUNCTION
+ */
+void MessageTCP::dump(){
+    cout << "type: " << type << endl;
+    cout << "payload: " << payload;
+    if(display_name)
+        cout << "display_name: " << display_name.value() << endl;
+    if(content)
+        cout << "content: " << content.value() << endl;
+    if(username)
+        cout << "username: " << username.value() << endl;
+    if(secret)
+        cout << "secret: " << secret.value() << endl;
+    if(channel)
+        cout << "channel: " << channel.value() << endl;
+    if(is_ok)
+        cout << "is_ok: " << is_ok.value() << endl;
 }

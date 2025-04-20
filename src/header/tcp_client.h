@@ -20,23 +20,23 @@ class ClientTCP{
         void connect_to_server();
         void close_connection();
 
+        MessageTCP process_message();
         void send_bye();
         void send_err(const string& error_message);
         bool send_msg(const string& text_content);
         FSMState error_to_server(const string& error_message);
-        MessageTCP process_message();
+        bool parse_as_command(const vector<string> &input);
 
         FSMState send_in_auth(const string& input);
         FSMState send_in_open(const string& input);
 
         FSMState read_stream();
+        FSMState empty_input_buffer();
 
         FSMState start_state();
         FSMState auth_state();
         FSMState open_state();
         FSMState join_state();
-
-        FSMState empty_input_buffer();
 
         string get_server();
         uint16_t get_port();
