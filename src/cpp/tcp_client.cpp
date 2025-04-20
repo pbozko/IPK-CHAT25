@@ -4,6 +4,9 @@
  * 16.04.2025
  */
 
+/**
+ * Headers
+ */
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <vector>
@@ -424,6 +427,9 @@ FSMState ClientTCP::join_state(){
                 return ENDING;
             } else if(new_message.get_type() == "REPLY"){
                 this->awaiting_reply = false;
+                /**
+                 * TODO: exit after 5s without reply
+                 */
                 return OPEN;
             } else if(new_message.get_type() == "INCOMPLETE"){
                 return this->fsm_state;

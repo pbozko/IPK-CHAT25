@@ -7,7 +7,6 @@
 #include <string>
 #include <optional>
 #include <iostream>
-#include "../header/message_values.h"
 #include "../header/error.h"
 #include "../header/tcp_message.h"
 #include "../header/string_functions.h"
@@ -143,8 +142,7 @@ void MessageTCP::dump(){
 }
 
 MessageTCP::Builder::Builder(const string &type, const string &payload)
-    : type(type), payload(payload) {} /* , display_name(nullopt), content(nullopt),
-    username(nullopt), secret(nullopt), channel(nullopt), is_ok(nullopt) */
+    : type(type), payload(payload) {}
 
 MessageTCP::Builder& MessageTCP::Builder::set_display_name(const string &value){
     display_name = value;
