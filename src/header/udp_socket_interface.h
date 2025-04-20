@@ -1,27 +1,29 @@
 /**
  * Martin Bozko
  * xbozko01
- * 18.11.2024 for ISA project
- * 18.04.2025 updated for IPK project
+ * 20.04.2025
  */
-#ifndef TCP_SOCKET_INTERFACE_H
-#define TCP_SOCKET_INTERFACE_H
+#ifndef UDP_SOCKET_INTERFACE_H
+#define UDP_SOCKET_INTERFACE_H
 
 #include <string>
+#include <vector>
 #include <netinet/in.h>
 
 using namespace std;
 
-class SocketTCP{
+class SocketUDP {
     public:
-        SocketTCP();
+        SocketUDP();
         int get_fd();
         sockaddr_in get_connection();
         void set_connection(in_addr_t ip_address, uint16_t port);
+        void update_port(uint16_t port);
         void create();
         void close();
-        bool send(const string &data);
-        string receive(int buffer_size);
+        bool send(const vector<uint8_t>& data);
+        vector<uint8_t> receive(int buffer_size);
+
     private:
         int fd;
         sockaddr_in connection;
