@@ -14,7 +14,6 @@
 #include <unistd.h>
 #include <iostream>
 #include <sstream>
-#include <csignal>
 #include "../header/tcp_client.h"
 #include "../header/error.h"
 #include "../header/string_functions.h"
@@ -80,7 +79,8 @@ void ClientTCP::connect_to_server(){
 void ClientTCP::close_connection(){
     if(this->socket_i.get_fd() > 0){
         shutdown(this->socket_i.get_fd(), SHUT_RDWR);
-        close(this->socket_i.get_fd());
+        //close(this->socket_i.get_fd());
+        this->socket_i.close();
     }
     this->fsm_state = ENDING;
 }

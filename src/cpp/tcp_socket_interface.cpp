@@ -71,7 +71,7 @@ sockaddr_in SocketTCP::get_connection(){
  * @param data data to send
  * @returns true if successful
  */
-bool SocketTCP::send(string data){
+bool SocketTCP::send(const string &data){
     if(::send(this->fd, data.c_str(), data.length(), 0) == -1) 
         throw fatal_error(SOCK_CREATE, "Failed to send through TCP socket."); 
     return true;

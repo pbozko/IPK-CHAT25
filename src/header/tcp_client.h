@@ -8,20 +8,11 @@
 #define TCP_CLIENT_H
 
 #include <string>
-#include <string>
 #include "../header/tcp_socket_interface.h"
 #include "../header/tcp_message.h"
+#include "../header/fsm_states.h"
 
 using namespace std;
-
-typedef enum FSMState{
-    START = 1,
-    AUTH = 2,
-    OPEN = 3,
-    JOIN = 4,
-    ENDING = 5,
-    END = 0,
-} FSMState;
 
 class ClientTCP{
     public:
@@ -57,7 +48,6 @@ class ClientTCP{
         FSMState fsm_state;
         vector<string> input_buffer;
         bool awaiting_reply;
-        string input_chars;
 };
 
 #endif

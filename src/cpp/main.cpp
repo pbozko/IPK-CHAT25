@@ -11,6 +11,9 @@
 #include "../header/arg_parser.h"
 #include "../header/tcp_message.h"
 #include "../header/tcp_client.h"
+#include "../header/udp_message.h"
+#include "../header/udp_client.h"
+#include "../header/udp_message_values.h"
 #include <string>
 #include <iostream>
 #include <csignal>
@@ -31,6 +34,7 @@ int main(int argc, char* argv[]){
     signal(SIGINT, ctrlc);
 
     ClientTCP *client_tcp = nullptr;
+    ClientUDP *client_udp = nullptr;
 
     arg_parser parser(argc, argv);
     bool is_tcp = (parser.get_protocol() == "tcp");
@@ -39,6 +43,9 @@ int main(int argc, char* argv[]){
     if(is_tcp){
         client_tcp = new ClientTCP(parser.get_server(), parser.get_port());
         client_tcp->connect_to_server();
+    } else{
+        client_udp = new ClientUDP(parser.get_server(), parser.get_port());
+        client_udp->verify_address();
     }
 
     /**
@@ -75,6 +82,11 @@ int main(int argc, char* argv[]){
                     client_tcp->send_bye();
                     client_tcp->close_connection();
                     delete client_tcp;
+                }
+                if(client_udp){
+                    //client_udp->send_bye();
+                    client_udp->close_socket();
+                    delete client_udp;
                 }
                 NEXT_STATE = END;
                 break;
