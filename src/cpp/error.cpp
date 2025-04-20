@@ -12,6 +12,9 @@
 
 using namespace std;
 
+/**
+ * Class for fatal errors - application exiting
+ */
 fatal_error::fatal_error(CError error_code, const string& details){
     string error_message;
     switch(error_code){
@@ -49,6 +52,9 @@ fatal_error::fatal_error(CError error_code, const string& details){
     exit(error_code);
 }
 
+/**
+ * Function for local errors - application doesn't exit
+ */
 void local_error(const string& error_message){
     cout << "ERROR: " << error_message << "\n";
 }

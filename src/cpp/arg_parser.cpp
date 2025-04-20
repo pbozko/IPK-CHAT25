@@ -7,6 +7,9 @@
  * Argument parser class implementation
  */
 
+ /**
+  * Headers
+  */
 #include <getopt.h>
 #include <iostream>
 #include <algorithm>
@@ -16,7 +19,11 @@
 
 using namespace std;
 
+/**
+ * Constructor for argument parser class.
+ */
 arg_parser::arg_parser(int argc, char** argv){
+    // set default/initial values
     this->argc = argc;
     this->argv = argv;
     this->protocol = "";
@@ -28,18 +35,26 @@ arg_parser::arg_parser(int argc, char** argv){
     this->udp_retransmission = 3;
     this->output_help_flag = false;
 
+    // parse arguments
     this->parse_input();
 
+    // check for necessary arguments
     if(!(this->t_flag && this->s_flag)){
         throw fatal_error(ARG_ERR, "Missing one or more required parameters (-t <protocol> -s <ip_addr/hostname>).");
     }
 
+    // convert protocol name string to lowercase
     transform(this->protocol.begin(), this->protocol.end(), this->protocol.begin(), ::tolower);
+    // check for valid protocol option
     if(this->protocol != "tcp" && this->protocol != "udp"){
         throw fatal_error(ARG_VAL, "Protocol can only be 'tcp' or 'udp'.");
     }
 }
 
+/**
+ * Parses arguments into class attributes
+ * @return void
+ */
 void arg_parser::parse_input(){
     int min_argc = 5; // executable, protocol + value, server + value
     int max_argc = 12;
@@ -94,6 +109,9 @@ void arg_parser::parse_input(){
     }
 }
 
+/**
+ * Getter functions
+ */
 string arg_parser::get_protocol(){
     return this->protocol;
 }
