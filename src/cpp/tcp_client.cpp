@@ -25,7 +25,7 @@ using namespace std;
 
 ClientTCP::ClientTCP(const string &server, uint16_t port)
     : server(server), port(port), socket_i(), display_name("Unknown"), 
-    /*stream_buffer(""),*/ fsm_state(START), awaiting_reply(false) {}
+    fsm_state(START), awaiting_reply(false) {}
 
 string ClientTCP::get_server(){
     return this->server;

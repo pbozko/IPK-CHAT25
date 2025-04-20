@@ -22,7 +22,8 @@ using namespace std;
 
 ClientUDP::ClientUDP(const string &server, uint16_t port, uint16_t timeout, uint8_t max_retries)
     : server(server), port(port), socket_i(), timeout(timeout), max_retries(max_retries), message_id(0),
-    display_name("Unknown"), /*stream_buffer(""),*/ fsm_state(START), awaiting_reply(false), awaiting_confirm(false), last_message(UNKNOWN_MSG, {}), retry_count(0) {}
+    display_name("UNDEFINED"), fsm_state(START), awaiting_reply(false), awaiting_confirm(false), last_message(UNKNOWN_MSG, {}), 
+    retry_count(0), require_confirm(false), require_time(false) {}
 
 string ClientUDP::get_server(){
     return this->server;
@@ -207,6 +208,8 @@ void ClientUDP::send_confirm(uint16_t ref_id){
 FSMState ClientUDP::error_to_server(const string& error_message){
     local_error(error_message); 
     this->send_err(error_message);
+    this->require_confirm = true;
+    this->require_time = false;
     return ENDING;
 }
 
@@ -312,7 +315,7 @@ bool ClientUDP::retransmit_if_timeout(){
             this->unconfirmed_message.second = chrono::steady_clock::now();
             this->retry_count += 1;
             if(retry_count > 3){
-                local_error("ERROR: Did not receive message confirmation for message '" + last_message.get_printable_payload() +"' in time. Exiting application.");
+                local_error("Did not receive message confirmation for message '" + last_message.get_printable_payload() +"' in time. Exiting application.");
             }
             return true;
         }
@@ -331,12 +334,16 @@ FSMState ClientUDP::start_state(){
     while(true){
         int ret = poll(file_descriptors.data(), file_descriptors.size(), -1);
         if(ret == -1){
+            this->require_confirm = false;
+            this->require_time = false;
             return ENDING;
         }
 
         if(file_descriptors[0].revents & POLLIN){
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
+                    this->require_confirm = false;
+                    this->require_time = false;
                     return ENDING;
                 }
                 return this->fsm_state;
@@ -350,10 +357,10 @@ FSMState ClientUDP::start_state(){
 
             switch(new_message.get_type()){
                 case ERR_MSG:
-                    return ENDING;
-                    break;
                 case BYE_MSG:
-                    return BYE;
+                    this->require_confirm = false;
+                    this->require_time = true;
+                    return ENDING;
                     break;
                 case MALFORMED_MSG:
                     return this->error_to_server("Received malformed message from server: " + new_message.get_printable_payload());
@@ -370,6 +377,8 @@ FSMState ClientUDP::start_state(){
         if(file_descriptors[1].revents & POLLIN){
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
+                    this->require_confirm = false;
+                    this->require_time = false;
                     return ENDING;
                 }
                 return this->fsm_state;
@@ -378,6 +387,8 @@ FSMState ClientUDP::start_state(){
             string input;
             getline(cin, input);
             if(cin.eof()){
+                this->require_confirm = true;
+                this->require_time = false;
                 return BYE;
             }
 
@@ -400,12 +411,16 @@ FSMState ClientUDP::auth_state(){
     while(true){
         int ret = poll(file_descriptors.data(), file_descriptors.size(), -1);
         if(ret == -1){
+            this->require_confirm = false;
+            this->require_time = false;
             return ENDING;
         }
 
         if(file_descriptors[0].revents & POLLIN){
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
+                    this->require_confirm = false;
+                    this->require_time = false;
                     return ENDING;
                 }
                 return this->fsm_state;
@@ -419,10 +434,10 @@ FSMState ClientUDP::auth_state(){
 
             switch(new_message.get_type()){
                 case ERR_MSG:
-                    return ENDING;
-                    break;
                 case BYE_MSG:
-                    return BYE;
+                    this->require_confirm = false;
+                    this->require_time = true;
+                    return ENDING;
                     break;
                 case MALFORMED_MSG:
                     return this->error_to_server("Received malformed message from server: " + new_message.get_printable_payload());
@@ -446,6 +461,8 @@ FSMState ClientUDP::auth_state(){
         if(file_descriptors[1].revents & POLLIN){
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
+                    this->require_confirm = false;
+                    this->require_time = false;
                     return ENDING;
                 }
                 return this->fsm_state;
@@ -454,6 +471,8 @@ FSMState ClientUDP::auth_state(){
             string input;
             getline(cin, input);
             if(cin.eof()){
+                this->require_confirm = true;
+                this->require_time = false;
                 return BYE;
             }
 
@@ -476,12 +495,16 @@ FSMState ClientUDP::open_state(){
     while(true){
         int ret = poll(file_descriptors.data(), file_descriptors.size(), -1);
         if(ret == -1){
+            this->require_confirm = false;
+            this->require_time = false;
             return ENDING;
         }
 
         if(file_descriptors[0].revents & POLLIN){
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
+                    this->require_confirm = false;
+                    this->require_time = false;
                     return ENDING;
                 }
                 return this->fsm_state;
@@ -495,10 +518,10 @@ FSMState ClientUDP::open_state(){
 
             switch(new_message.get_type()){
                 case ERR_MSG:
-                    return ENDING;
-                    break;
                 case BYE_MSG:
-                    return BYE;
+                    this->require_confirm = false;
+                    this->require_time = true;
+                    return ENDING;
                     break;
                 case MALFORMED_MSG:
                     return this->error_to_server("Received malformed message from server: " + new_message.get_printable_payload());
@@ -514,6 +537,8 @@ FSMState ClientUDP::open_state(){
         if(file_descriptors[1].revents & POLLIN){
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
+                    this->require_confirm = false;
+                    this->require_time = false;
                     return ENDING;
                 }
                 return this->fsm_state;
@@ -522,6 +547,8 @@ FSMState ClientUDP::open_state(){
             string input;
             getline(cin, input);
             if(cin.eof()){
+                this->require_confirm = true;
+                this->require_time = false;
                 return BYE;
             }
 
@@ -544,12 +571,16 @@ FSMState ClientUDP::join_state(){
     while(true){
         int ret = poll(file_descriptors.data(), file_descriptors.size(), -1);
         if(ret == -1){
+            this->require_confirm = false;
+            this->require_time = false;
             return ENDING;
         }
 
         if(file_descriptors[0].revents & POLLIN){
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
+                    this->require_confirm = false;
+                    this->require_time = false;
                     return ENDING;
                 }
                 return this->fsm_state;
@@ -563,10 +594,10 @@ FSMState ClientUDP::join_state(){
 
             switch(new_message.get_type()){
                 case ERR_MSG:
-                    return ENDING;
-                    break;
                 case BYE_MSG:
-                    return BYE;
+                    this->require_confirm = false;
+                    this->require_time = true;
+                    return ENDING;
                     break;
                 case MALFORMED_MSG:
                     return this->error_to_server("Received malformed message from server: " + new_message.get_printable_payload());
@@ -586,6 +617,8 @@ FSMState ClientUDP::join_state(){
         if(file_descriptors[1].revents & POLLIN){
             if(this->retransmit_if_timeout()){
                 if(this->retry_count > 3){
+                    this->require_confirm = false;
+                    this->require_time = false;
                     return ENDING;
                 }
                 return this->fsm_state;
@@ -594,6 +627,8 @@ FSMState ClientUDP::join_state(){
             string input;
             getline(cin, input);
             if(cin.eof()){
+                this->require_confirm = true;
+                this->require_time = false;
                 return BYE;
             }
 
@@ -608,6 +643,51 @@ FSMState ClientUDP::join_state(){
     return JOIN;
 }
 
-bool ClientUDP::ending_state(){
+void ClientUDP::ending_state(){
+    pollfd pfd;
+    pfd.fd = this->socket_i.get_fd();
+    pfd.events = POLLIN;
 
+    if(require_confirm){
+        for(uint8_t i = 0; i < this->max_retries + 1; i++){
+            int ret = poll(&pfd, 1, this->timeout);
+            if(ret > 0 && (pfd.revents & POLLIN)){
+                vector<uint8_t> incoming_payload = this->socket_i.receive(BUFFER_SIZE);
+                MessageUDP new_message(static_cast<MSG_VAL>(incoming_payload[0]), incoming_payload);
+        
+                if(!incoming_payload.empty()){
+                    if(new_message.parse()){
+                        if(new_message.get_type() == CONFIRM_MSG){
+                            auto past = this->unconfirmed_message.second;
+                            auto now = chrono::steady_clock::now();
+                            auto ms = chrono::duration_cast<chrono::milliseconds>(now - past).count();
+                            if(new_message.get_ref_id() == unconfirmed_message.first && ms < this->timeout){
+                                return;
+                            } else if(i != max_retries){
+                                this->socket_i.send(last_message.get_payload());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if(require_time){
+        for(uint8_t i = 0; i < this->max_retries; i++){
+            int ret = poll(&pfd, 1, this->timeout);
+            if(ret > 0 && (pfd.revents & POLLIN)){
+                vector<uint8_t> incoming_payload = this->socket_i.receive(BUFFER_SIZE);
+                MessageUDP new_message(static_cast<MSG_VAL>(incoming_payload[0]), incoming_payload);
+                if(!incoming_payload.empty()){
+                    if(new_message.parse()){
+                        this->send_confirm(new_message.get_ref_id());
+                    }
+                }
+            } else{
+                return;
+            }
+        }
+    }
+    local_error("Connection timed out during termination process.");
 }

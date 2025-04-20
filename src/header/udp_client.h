@@ -40,7 +40,7 @@ class ClientUDP{
         FSMState auth_state();
         FSMState open_state();
         FSMState join_state();
-        bool ending_state();
+        void ending_state();
 
         string get_server();
         uint16_t get_port();
@@ -69,6 +69,9 @@ class ClientUDP{
         unordered_set<uint16_t> processed_ids;
         pair<uint16_t, chrono::steady_clock::time_point> unconfirmed_message;
         uint8_t retry_count;
+
+        bool require_confirm;
+        bool require_time;
 };
 
 #endif

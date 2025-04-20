@@ -99,10 +99,9 @@ int main(int argc, char* argv[]){
                     delete client_tcp;
                 }
                 if(client_udp){
-                    if(client_udp->ending_state()){
-                        client_udp->close_socket();
-                        delete client_udp;
-                    } else NEXT_STATE = ENDING;
+                    client_udp->ending_state();
+                    client_udp->close_socket();
+                    delete client_udp;
                 }
                 NEXT_STATE = END;
                 break;
