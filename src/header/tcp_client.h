@@ -8,6 +8,7 @@
 #define TCP_CLIENT_H
 
 #include <string>
+#include <chrono>
 #include "../header/tcp_socket_interface.h"
 #include "../header/tcp_message.h"
 #include "../header/fsm_states.h"
@@ -25,6 +26,7 @@ class ClientTCP{
         void send_err(const string& error_message);
         bool send_msg(const string& text_content);
         FSMState error_to_server(const string& error_message);
+        bool check_reply();
         bool parse_as_command(const vector<string> &input);
 
         FSMState send_in_auth(const string& input);
@@ -54,6 +56,7 @@ class ClientTCP{
         FSMState fsm_state;
         vector<string> input_buffer;
         bool awaiting_reply;
+        chrono::steady_clock::time_point reply_expect_begin;
 };
 
 #endif

@@ -28,6 +28,7 @@ class ClientUDP{
         bool send_msg(const string& text_content);
         void send_confirm(const uint16_t ref_id);
         FSMState error_to_server(const string& error_message);
+        bool check_reply();
         bool parse_as_command(const vector<string> &input);
 
         FSMState send_in_auth(const string& input);
@@ -64,6 +65,7 @@ class ClientUDP{
         FSMState fsm_state;
         vector<string> input_buffer;
         bool awaiting_reply;
+        chrono::steady_clock::time_point reply_expect_begin;
         bool awaiting_confirm;
 
         MessageUDP last_message;

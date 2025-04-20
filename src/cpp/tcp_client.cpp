@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <sstream>
+#include <chrono>
 #include "../header/tcp_client.h"
 #include "../header/error.h"
 #include "../header/string_functions.h"
@@ -173,6 +174,18 @@ FSMState ClientTCP::error_to_server(const string &error_message){
     return ENDING;
 }
 
+bool ClientTCP::check_reply(){
+    if(awaiting_reply){
+        auto past = this->reply_expect_begin;
+        auto now = chrono::steady_clock::now();
+        auto ms = chrono::duration_cast<chrono::milliseconds>(now - past).count();
+        if(ms > 5000){
+            return true;
+        }
+    }
+    return false;
+}
+
 bool ClientTCP::parse_as_command(const vector<string> &input){
     if(input.size() > 0){
         if(input[0] == "/rename" && input.size() == 2){
@@ -224,6 +237,7 @@ FSMState ClientTCP::send_in_auth(const string &input){
                     this->set_display_name(display_name);
                     this->socket_i.send(auth_message.get_payload());
                     this->awaiting_reply = true;
+                    this->reply_expect_begin = chrono::steady_clock::now();
                     return AUTH;
                 } else{
                     local_error("Wrong command format. Expecting '/auth <username> <secret> <display_name>'.");
@@ -249,6 +263,7 @@ FSMState ClientTCP::send_in_open(const string& input){
             if(join_message.build()){
                 this->socket_i.send(join_message.get_payload());
                 this->awaiting_reply = true;
+                this->reply_expect_begin = chrono::steady_clock::now();
                 return JOIN;
             } else{
                 local_error("/join command contains forbidden characters.");
@@ -292,6 +307,14 @@ FSMState ClientTCP::empty_input_buffer(){
 
 FSMState ClientTCP::start_state(){
     this->fsm_state = START;
+    if(this->check_reply()){
+        try{
+            this->error_to_server("Received no response, terminating connection.");
+            return ENDING;
+        } catch(const std::exception& e){
+            return ENDING;
+        }
+    }
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
     while(true){
         int ret = poll(file_descriptors.data(), file_descriptors.size(), -1);
@@ -333,6 +356,14 @@ FSMState ClientTCP::start_state(){
 
 FSMState ClientTCP::auth_state(){
     this->fsm_state = AUTH;
+    if(this->check_reply()){
+        try{
+            this->error_to_server("Received no response, terminating connection.");
+            return ENDING;
+        } catch(const std::exception& e){
+            return ENDING;
+        }
+    }
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
 
     if(!this->awaiting_reply && this->input_buffer.size() > 0){
@@ -391,6 +422,14 @@ FSMState ClientTCP::auth_state(){
 
 FSMState ClientTCP::open_state(){
     this->fsm_state = OPEN;
+    if(this->check_reply()){
+        try{
+            this->error_to_server("Received no response, terminating connection.");
+            return ENDING;
+        } catch(const std::exception& e){
+            return ENDING;
+        }
+    }
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
 
     while(true){
@@ -436,6 +475,14 @@ FSMState ClientTCP::open_state(){
 
 FSMState ClientTCP::join_state(){
     this->fsm_state = JOIN;
+    if(this->check_reply()){
+        try{
+            this->error_to_server("Received no response, terminating connection.");
+            return ENDING;
+        } catch(const std::exception& e){
+            return ENDING;
+        }
+    }
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
 
     if(!this->awaiting_reply && this->input_buffer.size() > 0){

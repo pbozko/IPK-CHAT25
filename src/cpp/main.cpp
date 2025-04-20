@@ -1,12 +1,12 @@
 /**
  * Martin Bozko
  * xbozko01
- * 15.04.2025
+ * 20.04.2025
  */
 
- /**
-  * Headers
-  */
+/**
+ * Headers
+ */
 #include "../header/error.h"
 #include "../header/arg_parser.h"
 #include "../header/tcp_message.h"
@@ -24,17 +24,34 @@ using namespace std;
 FSMState FSM_STATE;
 FSMState NEXT_STATE = START;
 
+// global pointers for access in signal handler function
+ClientTCP *client_tcp = nullptr;
+ClientUDP *client_udp = nullptr;
+
 // Ctrl+C interrupt signal handler
 void ctrlc(int signum){
-    // set next FSM state to ENDING where graceful connection termination occurs
-    NEXT_STATE = BYE;
+    // client is disconnecting, send BYE message to server
+    if(client_tcp){
+        client_tcp->send_bye();
+    } else{
+        client_udp->send_bye();
+    }
+
+    // close connection
+    if(client_tcp){
+        client_tcp->close_connection();
+        delete client_tcp;
+    }
+    if(client_udp){
+        client_udp->ending_state();
+        client_udp->close_socket();
+        delete client_udp;
+    }
+    exit(0);
 }
 
 int main(int argc, char* argv[]){
     signal(SIGINT, ctrlc);
-
-    ClientTCP *client_tcp = nullptr;
-    ClientUDP *client_udp = nullptr;
 
     arg_parser parser(argc, argv);
     bool is_tcp = (parser.get_protocol() == "tcp");

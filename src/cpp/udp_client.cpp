@@ -216,6 +216,18 @@ FSMState ClientUDP::error_to_server(const string& error_message){
     return ENDING;
 }
 
+bool ClientUDP::check_reply(){
+    if(awaiting_reply){
+        auto past = this->reply_expect_begin;
+        auto now = chrono::steady_clock::now();
+        auto ms = chrono::duration_cast<chrono::milliseconds>(now - past).count();
+        if(ms > 5000){
+            return true;
+        }
+    }
+    return false;
+}
+
 bool ClientUDP::parse_as_command(const vector<string> &input){
     if(input.size() > 0){
         if(input[0] == "/rename" && input.size() == 2){
@@ -270,6 +282,7 @@ FSMState ClientUDP::send_in_auth(const string& input){
                     this->last_message = auth_message;
                     this->unconfirmed_message = {auth_message.get_id(), chrono::steady_clock::now()};
                     this->awaiting_reply = true;
+                    this->reply_expect_begin = chrono::steady_clock::now();
                     this->awaiting_confirm = true;
                     this->message_id++;
                     return AUTH;
@@ -300,6 +313,7 @@ FSMState ClientUDP::send_in_open(const string& input){
                 this->last_message = join_message;
                 this->unconfirmed_message = {join_message.get_id(), chrono::steady_clock::now()};
                 this->awaiting_reply = true;
+                this->reply_expect_begin = chrono::steady_clock::now();
                 this->awaiting_confirm = true;
                 this->message_id++;
                 return JOIN;
@@ -362,6 +376,14 @@ bool ClientUDP::retransmit_if_timeout(){
 
 FSMState ClientUDP::start_state(){
     this->fsm_state = START;
+    if(this->check_reply()){
+        try{
+            this->error_to_server("Received no response, terminating connection.");
+            return ENDING;
+        } catch(const std::exception& e){
+            return ENDING;
+        }   
+    }
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
 
     if(!this->awaiting_reply && !this->awaiting_confirm && this->input_buffer.size() > 0){
@@ -439,6 +461,14 @@ FSMState ClientUDP::start_state(){
 
 FSMState ClientUDP::auth_state(){
     this->fsm_state = AUTH;
+    if(this->check_reply()){
+        try{
+            this->error_to_server("Received no response, terminating connection.");
+            return ENDING;
+        } catch(const std::exception& e){
+            return ENDING;
+        }   
+    }
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
 
     if(!this->awaiting_reply && !this->awaiting_confirm && this->input_buffer.size() > 0){
@@ -523,6 +553,14 @@ FSMState ClientUDP::auth_state(){
 
 FSMState ClientUDP::open_state(){
     this->fsm_state = OPEN;
+    if(this->check_reply()){
+        try{
+            this->error_to_server("Received no response, terminating connection.");
+            return ENDING;
+        } catch(const std::exception& e){
+            return ENDING;
+        }   
+    }
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
 
     if(!this->awaiting_confirm && this->input_buffer.size() > 0){
@@ -599,6 +637,14 @@ FSMState ClientUDP::open_state(){
 
 FSMState ClientUDP::join_state(){
     this->fsm_state = JOIN;
+    if(this->check_reply()){
+        try{
+            this->error_to_server("Received no response, terminating connection.");
+            return ENDING;
+        } catch(const std::exception& e){
+            return ENDING;
+        }   
+    }
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
 
     if(!this->awaiting_reply && !this->awaiting_confirm && this->input_buffer.size() > 0){
