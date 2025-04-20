@@ -27,7 +27,7 @@ FSMState NEXT_STATE = START;
 // Ctrl+C interrupt signal handler
 void ctrlc(int signum){
     // set next FSM state to ENDING where graceful connection termination occurs
-    NEXT_STATE = ENDING;
+    NEXT_STATE = BYE;
 }
 
 int main(int argc, char* argv[]){
@@ -44,7 +44,7 @@ int main(int argc, char* argv[]){
         client_tcp = new ClientTCP(parser.get_server(), parser.get_port());
         client_tcp->connect_to_server();
     } else{
-        client_udp = new ClientUDP(parser.get_server(), parser.get_port());
+        client_udp = new ClientUDP(parser.get_server(), parser.get_port(), parser.get_udp_timeout(), parser.get_udp_retransmission());
         client_udp->verify_address();
     }
 
@@ -59,34 +59,50 @@ int main(int argc, char* argv[]){
             case START:
                 if(is_tcp){
                     NEXT_STATE = client_tcp->start_state();
+                } else{
+                    NEXT_STATE = client_udp->start_state();
                 }
                 break;
             case AUTH:
                 if(is_tcp){
                     NEXT_STATE = client_tcp->auth_state();
+                } else{
+                    NEXT_STATE = client_udp->auth_state();
                 }
                 break;
             case OPEN:
                 if(is_tcp){
                     NEXT_STATE = client_tcp->open_state();
+                } else{
+                    NEXT_STATE = client_udp->open_state();
                 }
                 break;
             case JOIN:
                 if(is_tcp){
                     NEXT_STATE = client_tcp->join_state();
+                } else{
+                    NEXT_STATE = client_udp->join_state();
                 }
+                break;
+            case BYE:
+                if(client_tcp){
+                    client_tcp->send_bye();
+                } else{
+                    client_udp->send_bye();
+                }
+                NEXT_STATE = ENDING;
                 break;
             case ENDING:
                 // terminate connection gracefully
                 if(client_tcp){
-                    client_tcp->send_bye();
                     client_tcp->close_connection();
                     delete client_tcp;
                 }
                 if(client_udp){
-                    //client_udp->send_bye();
-                    client_udp->close_socket();
-                    delete client_udp;
+                    if(client_udp->ending_state()){
+                        client_udp->close_socket();
+                        delete client_udp;
+                    } else NEXT_STATE = ENDING;
                 }
                 NEXT_STATE = END;
                 break;

@@ -24,7 +24,8 @@
 using namespace std;
 
 ClientTCP::ClientTCP(const string &server, uint16_t port)
-    : server(server), port(port), socket_i(), display_name("Unknown"), stream_buffer(""), fsm_state(START), awaiting_reply(false) {}
+    : server(server), port(port), socket_i(), display_name("Unknown"), 
+    /*stream_buffer(""),*/ fsm_state(START), awaiting_reply(false) {}
 
 string ClientTCP::get_server(){
     return this->server;
@@ -44,6 +45,18 @@ string ClientTCP::get_display_name(){
 
 void ClientTCP::set_display_name(const string &new_name){
     this->display_name = new_name;
+}
+
+vector<pollfd> get_file_descriptors(SocketTCP socket){
+    vector<pollfd> fds(2);
+
+    fds[0].fd = socket.get_fd();
+    fds[0].events = POLLIN;
+
+    fds[1].fd = STDIN_FILENO;
+    fds[1].events = POLLIN;
+
+    return fds;
 }
 
 void ClientTCP::connect_to_server(){
@@ -95,13 +108,8 @@ MessageTCP ClientTCP::process_message(){
             MessageTCP new_message(type, message);
             if(new_message.parse()){
                 if(new_message.get_type() == "REPLY"){
-                    string state = "";
-                    if(new_message.get_is_ok() == "OK"){
-                        state = "Success";
-                    } else{
-                        state = "Failure";
-                    }
-                    cout << "Action " << state << ": " << new_message.get_content() << "\n";
+                    string result = (new_message.get_is_ok() == "OK") ? "Success" : "Failure";
+                    cout << "Action " << result << ": " << new_message.get_content() << "\n";
                 } else if(new_message.get_type() == "ERR"){
                     cout << "ERROR FROM " << new_message.get_display_name() << ": " << new_message.get_content() << "\n";
                 } else if(new_message.get_type() == "MSG" && (this->fsm_state == OPEN || this->fsm_state == JOIN)){
@@ -126,7 +134,6 @@ void ClientTCP::send_bye(){
     } else {
         throw fatal_error(SOCK_NONX, "Failed to accesss TCP socket.");
     }
-
 }
 
 void ClientTCP::send_err(const string& error_message){
@@ -157,6 +164,12 @@ bool ClientTCP::send_msg(const string& text_content){
     }
 }
 
+FSMState ClientTCP::error_to_server(const string& error_message){
+    local_error(error_message); 
+    this->send_err(error_message);
+    return ENDING;
+}
+
 FSMState ClientTCP::send_in_auth(const string& input){
     vector<string> message_parts = tokenize(input);
     if(message_parts.size() != 4){
@@ -171,8 +184,8 @@ FSMState ClientTCP::send_in_auth(const string& input){
         if(command == "/auth"){
             MessageTCP auth_message = MessageTCP::Builder("AUTH", "")
                                             .set_username(username)
-                                            .set_secret(secret)
                                             .set_display_name(display_name)
+                                            .set_secret(secret)
                                             .construct();
             if(auth_message.build()){
                 this->set_display_name(display_name);
@@ -240,24 +253,6 @@ FSMState ClientTCP::empty_input_buffer(){
     }
 }
 
-FSMState ClientTCP::error_to_server(const string& error_message){
-    local_error(error_message); 
-    this->send_err(error_message);
-    return ENDING;
-}
-
-vector<pollfd> get_file_descriptors(SocketTCP socket){
-    vector<pollfd> fds(2);
-
-    fds[0].fd = socket.get_fd();
-    fds[0].events = POLLIN;
-
-    fds[1].fd = STDIN_FILENO;
-    fds[1].events = POLLIN;
-
-    return fds;
-}
-
 FSMState ClientTCP::start_state(){
     this->fsm_state = START;
     vector<pollfd> file_descriptors = get_file_descriptors(this->get_socket_i());
@@ -273,8 +268,10 @@ FSMState ClientTCP::start_state(){
             }
             MessageTCP new_message = this->process_message();
 
-            if(new_message.get_type() == "ERR" || new_message.get_type() == "BYE"){
+            if(new_message.get_type() == "ERR"){
                 return ENDING;
+            } else if(new_message.get_type() == "BYE"){
+                return BYE;
             } else if(new_message.get_type() == "INCOMPLETE"){
                 return this->fsm_state;
             } else if(new_message.get_type() == "MALFORMED"){
@@ -291,7 +288,7 @@ FSMState ClientTCP::start_state(){
             string input;
             getline(cin, input);
             if(cin.eof()){
-                return ENDING;
+                return BYE;
             }
 
             return this->send_in_auth(input);
@@ -320,7 +317,11 @@ FSMState ClientTCP::auth_state(){
             }
             MessageTCP new_message = this->process_message();
 
-            if(new_message.get_type() == "REPLY"){
+            if(new_message.get_type() == "ERR"){
+                return ENDING;
+            } else if(new_message.get_type() == "BYE"){
+                return BYE;
+            } else if(new_message.get_type() == "REPLY"){
                 this->awaiting_reply = false;
                 if(new_message.get_is_ok() == "OK"){
                     return OPEN;
@@ -328,11 +329,7 @@ FSMState ClientTCP::auth_state(){
                     return AUTH;
                 }
             } else if(new_message.get_type() == "MSG"){
-                local_error("Received unexpected MSG message.");
-                this->send_err("Received unexpected MSG message.");
-                return ENDING;
-            } else if(new_message.get_type() == "ERR" || new_message.get_type() == "BYE"){
-                return ENDING;
+                return this->error_to_server("Received unexpected MSG message from server: " + new_message.get_payload());
             } else if(new_message.get_type() == "INCOMPLETE"){
                 return this->fsm_state;
             } else if(new_message.get_type() == "MALFORMED"){
@@ -347,7 +344,7 @@ FSMState ClientTCP::auth_state(){
             string input;
             getline(cin, input);
             if(cin.eof()){
-                return ENDING;
+                return BYE;
             }
 
             if(this->awaiting_reply){
@@ -374,12 +371,12 @@ FSMState ClientTCP::open_state(){
             }
             MessageTCP new_message = this->process_message();
 
-            if(new_message.get_type() == "ERR" || new_message.get_type() == "BYE"){
+            if(new_message.get_type() == "ERR"){
                 return ENDING;
+            } else if(new_message.get_type() == "BYE"){
+                return BYE;
             } else if(new_message.get_type() == "REPLY"){
-                local_error("Received unexpected REPLY message from server."); 
-                this->send_err("Received unexpected REPLY message from server.");
-                return ENDING;
+                this->error_to_server("Received unexpected REPLY message from server.");
             } else if(new_message.get_type() == "INCOMPLETE"){
                 return this->fsm_state;
             } else if(new_message.get_type() == "MALFORMED"){
@@ -394,7 +391,7 @@ FSMState ClientTCP::open_state(){
             string input;
             getline(cin, input);
             if(cin.eof()){
-                return ENDING;
+                return BYE;
             }
 
             return this->send_in_open(input);
@@ -423,8 +420,10 @@ FSMState ClientTCP::join_state(){
             }
             MessageTCP new_message = this->process_message();
 
-            if(new_message.get_type() == "ERR" || new_message.get_type() == "BYE"){
+            if(new_message.get_type() == "ERR"){
                 return ENDING;
+            } else if(new_message.get_type() == "BYE"){
+                return BYE;
             } else if(new_message.get_type() == "REPLY"){
                 this->awaiting_reply = false;
                 /**
@@ -445,7 +444,7 @@ FSMState ClientTCP::join_state(){
             string input;
             getline(cin, input);
             if(cin.eof()){
-                return ENDING;
+                return BYE;
             }
 
             if(this->awaiting_reply){
@@ -454,6 +453,9 @@ FSMState ClientTCP::join_state(){
                 local_error("Message you tried to send contains forbidden characters.");
             }
             return this->fsm_state;
+            /**
+             * TODO: messages prefixed with '/' shouldnt be valid?
+             */
         }
     }
     return JOIN;

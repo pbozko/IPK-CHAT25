@@ -16,7 +16,10 @@ typedef enum MSG_VAL : uint8_t{
     MSG_MSG = 0x04,
     PING_MSG = 0xFD,
     ERR_MSG = 0xFE,
-    BYE_MSG = 0xFF
+    BYE_MSG = 0xFF,
+    MALFORMED_MSG = 0x10,
+    UNKNOWN_MSG = 0x11,
+    ALREADY_PROCESSED = 0x20,
 } MSG_VAL;
 
 #endif

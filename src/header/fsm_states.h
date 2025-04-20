@@ -15,6 +15,7 @@ typedef enum FSMState{
     JOIN = 4,
     ENDING = 5,
     END = 0,
+    BYE = 10
 } FSMState;
 
 #endif

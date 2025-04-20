@@ -40,6 +40,7 @@ class MessageUDP {
         string get_display_name();
         string get_secret();
         string get_channel();
+        string get_printable_payload();
 
     private:
         MSG_VAL type; //(uint8_t)

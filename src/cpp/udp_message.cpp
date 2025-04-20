@@ -31,6 +31,10 @@ vector<uint8_t> MessageUDP::get_payload(){
     return this->payload;
 }
 
+MSG_VAL MessageUDP::get_type(){
+    return this->type;
+}
+
 uint16_t MessageUDP::get_id(){
     return this->id.value();
 }
@@ -61,6 +65,11 @@ string MessageUDP::get_secret(){
 
 string MessageUDP::get_channel(){
     return this->channel.value();
+}
+
+string MessageUDP::get_printable_payload(){
+    string printable_payload(this->get_payload().begin(), this->get_payload().end());
+    return printable_payload;
 }
 
 void push_two_bytes(vector<uint8_t> &payload, uint16_t value){
@@ -96,9 +105,6 @@ vector<string> pop_string(vector<uint8_t> &payload, size_t n, size_t index){
         if(index < payload.size() && payload[index] == '\0'){
             index++;
         } else{
-            /**
-             * TODO: malformed message;
-             */
             return {};
         }
     }
@@ -117,7 +123,7 @@ bool MessageUDP::build(){
         case AUTH_MSG:
             if(this->id && this->username && check_id(this->username.value()) && this->display_name && check_dname(this->display_name.value()) && this->secret && check_secret(this->secret.value())){
                 push_two_bytes(this->payload, this->id.value());
-                push_string(this->payload, {this->username.value(), this->secret.value(), this->display_name.value()});
+                push_string(this->payload, {this->username.value(), this->display_name.value(), this->secret.value()});
             } else return false;
             break;
         case JOIN_MSG:
