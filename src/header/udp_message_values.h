@@ -8,7 +8,7 @@
 
 #include <cstdint>
 
-typedef enum MSG_VAL : uint8_t {
+typedef enum MSG_VAL : uint8_t{
     CONFIRM_MSG = 0x00,
     REPLY_MSG = 0x01,
     AUTH_MSG = 0x02,
