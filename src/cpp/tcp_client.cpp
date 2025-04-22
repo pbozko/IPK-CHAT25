@@ -96,6 +96,8 @@ void ClientTCP::connect_to_server(){
         addrinfo *resolved = nullptr;
         int result = getaddrinfo(this->server.c_str(), nullptr, &hints, &resolved);
         if(result != 0 || resolved == nullptr){
+            if(resolved)
+                freeaddrinfo(resolved);
             fatal_error(SERV_RESL, "Failed to resolve hostname to IP address.");
         }
         
