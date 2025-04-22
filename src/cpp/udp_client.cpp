@@ -77,7 +77,7 @@ void ClientUDP::verify_address(){
         addrinfo *resolved = nullptr;
         int result = getaddrinfo(this->server.c_str(), nullptr, &hints, &resolved);
         if(result != 0 || resolved == nullptr){
-            throw fatal_error(SERV_RESL, "Failed to resolve hostname to IP address.");
+            fatal_error(SERV_RESL, "Failed to resolve hostname to IP address.");
         }
 
         ip_address = ((struct sockaddr_in*)resolved->ai_addr)->sin_addr;
@@ -150,7 +150,7 @@ void ClientUDP::send_bye(){
         this->awaiting_confirm = true;
         this->message_id++;
     } else {
-        throw fatal_error(SOCK_NONX, "Failed to accesss UDP socket.");
+        fatal_error(SOCK_NONX, "Failed to accesss UDP socket.");
     }
 }
 
@@ -168,7 +168,7 @@ void ClientUDP::send_err(const string& error_message){
         this->awaiting_confirm = true;
         this->message_id++;
     } else {
-        throw fatal_error(SOCK_NONX, "Failed to accesss UDP socket.");
+        fatal_error(SOCK_NONX, "Failed to accesss UDP socket.");
     }
 }
 
@@ -189,7 +189,7 @@ bool ClientUDP::send_msg(const string& text_content){
                 return true;
             } else return false;
         } else {
-            throw fatal_error(SOCK_NONX, "Failed to accesss UDP socket.");
+            fatal_error(SOCK_NONX, "Failed to accesss UDP socket.");
         }
     }
     return true;
@@ -204,7 +204,7 @@ void ClientUDP::send_confirm(uint16_t ref_id){
             this->socket_i.send(confirm_message.get_payload());
         }
     } else {
-        throw fatal_error(SOCK_NONX, "Failed to accesss UDP socket.");
+        fatal_error(SOCK_NONX, "Failed to accesss UDP socket.");
     }
 }
 

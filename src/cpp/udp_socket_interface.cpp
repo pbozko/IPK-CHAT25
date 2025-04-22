@@ -33,7 +33,7 @@ SocketUDP::SocketUDP()
 void SocketUDP::create(){
     this->fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (this->fd == -1)
-        throw fatal_error(SOCK_CREATE, "Failed to open UDP socket.");
+        fatal_error(SOCK_CREATE, "Failed to open UDP socket.");
 }
 
 /**
@@ -87,7 +87,7 @@ sockaddr_in SocketUDP::get_connection() {
 bool SocketUDP::send(const vector<uint8_t>& data){
     ssize_t sent_bytes = sendto(this->fd, data.data(), data.size(), 0, (sockaddr*)&this->connection, sizeof(this->connection));
     if(sent_bytes == -1)
-        throw fatal_error(SOCK_SEND, "Failed to send via UDP socket.");
+        fatal_error(SOCK_SEND, "Failed to send via UDP socket.");
     return true;
 }
 
@@ -106,7 +106,7 @@ vector<uint8_t> SocketUDP::receive(int buffer_size){
     ssize_t received_bytes = recvfrom(this->fd, buffer.data(), buffer_size, 0, (sockaddr*)&server_connection, &addr_len);
 
     if(received_bytes == -1)
-        throw fatal_error(SOCK_RECV, "Failed to receive from UDP socket.");
+        fatal_error(SOCK_RECV, "Failed to receive from UDP socket.");
 
     // update port
     if(ntohs(server_connection.sin_port) != ntohs(this->connection.sin_port)){

@@ -24,12 +24,7 @@ typedef enum CError{
     SERV_CONN = 57,
 } CError;
 
-class fatal_error{
-    public:
-        fatal_error(CError error_code, const string& details);
-    private:
-        string details;
-};
+void fatal_error(CError error_code, const string& error_message);
 
 void local_error(const string& error_message);
 

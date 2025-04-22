@@ -96,7 +96,7 @@ void ClientTCP::connect_to_server(){
         addrinfo *resolved = nullptr;
         int result = getaddrinfo(this->server.c_str(), nullptr, &hints, &resolved);
         if(result != 0 || resolved == nullptr){
-            throw fatal_error(SERV_RESL, "Failed to resolve hostname to IP address.");
+            fatal_error(SERV_RESL, "Failed to resolve hostname to IP address.");
         }
         
         // create socket connection
@@ -112,7 +112,7 @@ void ClientTCP::connect_to_server(){
     // connect to server
     sockaddr_in connection = this->socket_i.get_connection();
     if(connect(this->socket_i.get_fd(), (struct sockaddr*)&connection, sizeof(connection)) == -1){
-        throw fatal_error(SERV_CONN, "Failed to connect to server.");
+        fatal_error(SERV_CONN, "Failed to connect to server.");
     }
 }
 
@@ -185,7 +185,7 @@ void ClientTCP::send_bye(){
         this->socket_i.send(bye_message.get_payload());
     } else {
         // socket isnt open
-        throw fatal_error(SOCK_NONX, "Failed to accesss TCP socket.");
+        fatal_error(SOCK_NONX, "Failed to accesss TCP socket.");
     }
 }
 
@@ -207,7 +207,7 @@ void ClientTCP::send_err(const string &error_message){
         this->socket_i.send(err_message.get_payload());
     } else {
         // socket isnt open
-        throw fatal_error(SOCK_NONX, "Failed to accesss TCP socket.");
+        fatal_error(SOCK_NONX, "Failed to accesss TCP socket.");
     }
 }
 
@@ -233,7 +233,7 @@ bool ClientTCP::send_msg(const string &text_content){
             } else return false;
         } else {
             // socket isnt open
-            throw fatal_error(SOCK_NONX, "Failed to accesss TCP socket.");
+            fatal_error(SOCK_NONX, "Failed to accesss TCP socket.");
         }
     }
     return true;
