@@ -17,10 +17,10 @@
 using namespace std;
 
 /**
- * Function for fatal errors - application exiting
+ * Class for fatal errors - application exiting
  */
-void fatal_error(CError error_code, const string& error_message){
-    cout << error_message << endl;
+fatal_error::fatal_error(CError error_code, const string& error_message){
+    cout << "ERROR: " << error_message << endl;
     exit(error_code);
 }
 

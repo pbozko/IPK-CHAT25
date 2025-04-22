@@ -51,14 +51,14 @@ arg_parser::arg_parser(int argc, char** argv){
 
     // check for necessary arguments
     if(!(this->t_flag && this->s_flag)){
-        fatal_error(ARG_ERR, "Missing one or more required parameters (-t <protocol> -s <ip_addr/hostname>).");
+        throw fatal_error(ARG_ERR, "Missing one or more required parameters (-t <protocol> -s <ip_addr/hostname>).");
     }
 
     // convert protocol name string to lowercase
     transform(this->protocol.begin(), this->protocol.end(), this->protocol.begin(), ::tolower);
     // check for valid protocol option
     if(this->protocol != "tcp" && this->protocol != "udp"){
-        fatal_error(ARG_VAL, "Protocol can only be 'tcp' or 'udp'.");
+        throw fatal_error(ARG_VAL, "Protocol can only be 'tcp' or 'udp'.");
     }
 }
 
@@ -70,9 +70,9 @@ void arg_parser::parse_input(){
     int min_argc = 5; // executable, protocol + value, server + value
     int max_argc = 12;
     if(argc < min_argc){
-        fatal_error(ARG_ERR, "Too few arguments.");
+        throw fatal_error(ARG_ERR, "Too few arguments.");
     } else if(argc > max_argc){
-        fatal_error(ARG_ERR, "Too many arguments.");
+        throw fatal_error(ARG_ERR, "Too many arguments.");
     }
 
     int arg = 0;
@@ -90,31 +90,31 @@ void arg_parser::parse_input(){
                 try{
                     this->port = static_cast<uint16_t>(stoi(optarg));
                 } catch(const invalid_argument& e){
-                    fatal_error(ARG_VAL, "Port number must be an integer.");
+                    throw fatal_error(ARG_VAL, "Port number must be an integer.");
                 } catch(const out_of_range& e){
-                    fatal_error(CONV_ERR, "Error converting specified port number to uint16_t.");
+                    throw fatal_error(CONV_ERR, "Error converting specified port number to uint16_t.");
                 } break;
             case 'd':
                 try{
                     this->udp_timeout = static_cast<uint16_t>(stoi(optarg));
                 } catch(const invalid_argument& e){
-                    fatal_error(ARG_VAL, "UDP timeout value must be an integer.");
+                    throw fatal_error(ARG_VAL, "UDP timeout value must be an integer.");
                 } catch(const out_of_range& e){
-                    fatal_error(ARG_VAL, "Error converting UDP timeout value to uint16_t.");
+                    throw fatal_error(ARG_VAL, "Error converting UDP timeout value to uint16_t.");
                 } break;
             case 'r':
                 try{
                     this->udp_retransmission = static_cast<uint16_t>(stoi(optarg));
                 } catch(const invalid_argument& e){
-                    fatal_error(ARG_VAL, "UDP retransmission value must be an integer.");
+                    throw fatal_error(ARG_VAL, "UDP retransmission value must be an integer.");
                 } catch(const out_of_range& e){
-                    fatal_error(ARG_VAL, "Error converting UDP retransmission value to uint16_t.");
+                    throw fatal_error(ARG_VAL, "Error converting UDP retransmission value to uint16_t.");
                 } break;
             case 'h':
                 this->output_help_flag = true;
                 break;
             default:
-                fatal_error(ARG_ERR, "Unrecognized argument.");
+                throw fatal_error(ARG_ERR, "Unrecognized argument.");
                 break;
         }
     }

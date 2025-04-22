@@ -75,30 +75,30 @@ int main(int argc, char* argv[]){
         switch(FSM_STATE){
             case START:
                 if(is_tcp){
-                    NEXT_STATE = client_tcp->start_state();
+                    NEXT_STATE = client_tcp->state_process(FSM_STATE);
                 } else{
-                    NEXT_STATE = client_udp->start_state();
+                    NEXT_STATE = client_udp->state_process(FSM_STATE);
                 }
                 break;
             case AUTH:
                 if(is_tcp){
-                    NEXT_STATE = client_tcp->auth_state();
+                    NEXT_STATE = client_tcp->state_process(FSM_STATE);
                 } else{
-                    NEXT_STATE = client_udp->auth_state();
+                    NEXT_STATE = client_udp->state_process(FSM_STATE);
                 }
                 break;
             case OPEN:
                 if(is_tcp){
-                    NEXT_STATE = client_tcp->open_state();
+                    NEXT_STATE = client_tcp->state_process(FSM_STATE);
                 } else{
-                    NEXT_STATE = client_udp->open_state();
+                    NEXT_STATE = client_udp->state_process(FSM_STATE);
                 }
                 break;
             case JOIN:
                 if(is_tcp){
-                    NEXT_STATE = client_tcp->join_state();
+                    NEXT_STATE = client_tcp->state_process(FSM_STATE);
                 } else{
-                    NEXT_STATE = client_udp->join_state();
+                    NEXT_STATE = client_udp->state_process(FSM_STATE);
                 }
                 break;
             case BYE:

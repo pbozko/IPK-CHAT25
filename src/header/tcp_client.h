@@ -21,23 +21,21 @@ class ClientTCP{
         void close_connection();
 
         MessageTCP process_message();
+        void send_auth(const string &username, const string &secret, const string &display_name);
+        void send_join(const string &channel);
         void send_bye();
         void send_err(const string& error_message);
-        bool send_msg(const string& text_content);
+        void send_msg(const string& text_content);
         FSMState error_to_server(const string& error_message);
         bool check_reply();
         bool parse_as_command(const vector<string> &input);
 
-        FSMState send_in_auth(const string& input);
-        FSMState send_in_open(const string& input);
+        FSMState send_message(bool read_flag, const string &buffer_input);
 
         FSMState read_stream();
         FSMState empty_input_buffer();
 
-        FSMState start_state();
-        FSMState auth_state();
-        FSMState open_state();
-        FSMState join_state();
+        FSMState state_process(FSMState NEW_FSM_STATE);
 
         string get_server();
         uint16_t get_port();

@@ -34,7 +34,7 @@ SocketTCP::SocketTCP()
 void SocketTCP::create(){
     this->fd = socket(AF_INET, SOCK_STREAM, 0);
     if(this->fd == - 1) 
-        fatal_error(SOCK_CREATE, "Failed to open TCP socket."); 
+        throw fatal_error(SOCK_CREATE, "Failed to open TCP socket."); 
 }
 
 /**
@@ -78,7 +78,7 @@ sockaddr_in SocketTCP::get_connection(){
  */
 bool SocketTCP::send(const string &data){
     if(::send(this->fd, data.c_str(), data.length(), 0) == -1) 
-        fatal_error(SOCK_CREATE, "Failed to send through TCP socket."); 
+        throw fatal_error(SOCK_CREATE, "Failed to send through TCP socket."); 
     return true;
 }
 
@@ -95,7 +95,7 @@ string SocketTCP::receive(int buffer_size){
     int received_bytes = recv(this->fd, &buffer[0], buffer_size, 0);
     
     if(received_bytes == -1) 
-        fatal_error(SOCK_CREATE, "Failed to receive from TCP socket."); 
+        throw fatal_error(SOCK_CREATE, "Failed to receive from TCP socket."); 
     
     buffer.resize(received_bytes);
     return buffer;

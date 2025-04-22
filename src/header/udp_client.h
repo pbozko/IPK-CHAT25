@@ -23,13 +23,17 @@ class ClientUDP{
         void close_socket();
 
         MessageUDP process_message(const vector<uint8_t> payload);
+        void send_auth(const string &username, const string &secret, const string &display_name);
+        void send_join(const string &channel);
         void send_bye();
         void send_err(const string& error_message);
-        bool send_msg(const string& text_content);
+        void send_msg(const string& text_content);
         void send_confirm(const uint16_t ref_id);
         FSMState error_to_server(const string& error_message);
         bool check_reply();
         bool parse_as_command(const vector<string> &input);
+
+        FSMState send_message(bool read_flag, const string &buffer_input);
 
         FSMState send_in_auth(const string& input);
         FSMState send_in_open(const string& input);
@@ -37,6 +41,8 @@ class ClientUDP{
         FSMState read_datagram();
         FSMState empty_input_buffer();
         bool retransmit_if_timeout();
+
+        FSMState state_process(FSMState NEW_FSM_STATE);
 
         FSMState start_state();
         FSMState auth_state();
