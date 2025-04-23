@@ -71,7 +71,7 @@ string get_full_message(string &stream_buffer){
  * @return true if regex match was successful
  */
 bool check_id(const string &id){
-    regex id_regex(R"(^[A-Za-z0-9._-]{1,20}$)");
+    regex id_regex(R"(^[A-Za-z0-9_-]{1,20}$)");
     return regex_match(id, id_regex);
 }
 
